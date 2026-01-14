@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom"; 
+import { useParams, Link } from "react-router-dom";
 import {
   BsGraphUp,
   BsWallet2,
@@ -8,6 +8,7 @@ import {
   BsBookmarkPlus,
   BsBookmarkCheckFill,
   BsPlayBtn,
+  BsFillChatQuoteFill
 } from "react-icons/bs";
 import MovieCard from "../components/MovieCard";
 import styled from "styled-components";
@@ -15,12 +16,49 @@ import api from "../services/api";
 
 const profileUrl = "https://image.tmdb.org/t/p/w185/";
 
+const ReviewItem = ({ review }) => {
+  const [expanded, setExpanded] = useState(false);
+  const maxChars = 300;
+  
+  const isLong = review.content.length > maxChars;
+  
+  const contentToShow = expanded || !isLong 
+    ? review.content 
+    : review.content.substring(0, maxChars) + "...";
+
+  return (
+    <div className="review-card">
+        <div className="review-header">
+            {review.author_details?.avatar_path ? (
+                 <img 
+                    src={review.author_details.avatar_path.startsWith('/http') 
+                        ? review.author_details.avatar_path.substring(1) 
+                        : profileUrl + review.author_details.avatar_path} 
+                    alt={review.author}
+                    onError={(e) => {e.target.style.display='none'}}
+                 />
+            ) : (
+                <div className="avatar-placeholder">{review.author.charAt(0)}</div>
+            )}
+            <h4>{review.author}</h4>
+        </div>
+        <p className="review-content">{contentToShow}</p>
+        {isLong && (
+            <button className="read-more-btn" onClick={() => setExpanded(!expanded)}>
+                {expanded ? "Read Less" : "Read More"}
+            </button>
+        )}
+    </div>
+  );
+};
+
 const Movie = () => {
   const { id } = useParams();
   const [movie, setMovie] = useState(null);
   const [trailerKey, setTrailerKey] = useState(null);
   const [cast, setCast] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
@@ -45,6 +83,9 @@ const Movie = () => {
 
         const recomRes = await api.get(`movie/${id}/recommendations`);
         setRecommendations(recomRes.data.results.slice(0, 6));
+
+        const reviewsRes = await api.get(`movie/${id}/reviews`);
+        setReviews(reviewsRes.data.results);
 
       } catch (error) {
         console.error(error);
@@ -151,6 +192,17 @@ const Movie = () => {
                   ></iframe>
                 </div>
               </div>
+            )}
+            
+            {reviews.length > 0 && (
+                <div className="reviews-section">
+                    <h3><BsFillChatQuoteFill /> User Reviews</h3>
+                    <div className="reviews-list">
+                        {reviews.slice(0, 3).map((review) => ( 
+                            <ReviewItem key={review.id} review={review} />
+                        ))}
+                    </div>
+                </div>
             )}
 
             {recommendations.length > 0 && (
@@ -294,6 +346,57 @@ const Container = styled.div`
   }
   .video-responsive iframe {
     left: 0; top: 0; height: 100%; width: 100%; position: absolute;
+  }
+
+  .reviews-section { margin-top: 2rem; }
+  .reviews-section h3 { color: var(--primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+  
+  .review-card {
+    background-color: var(--surface);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+
+  .review-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .review-header img, .avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .avatar-placeholder {
+    background-color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+
+  .review-content {
+    font-style: italic;
+    color: #ccc;
+    line-height: 1.5;
+  }
+
+  .read-more-btn {
+    background: none;
+    border: none;
+    color: var(--secondary);
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 0.5rem;
+    padding: 0;
+    font-size: 0.9rem;
   }
 
   .recommendations-section {
