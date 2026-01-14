@@ -21,6 +21,10 @@ const Navbar = () => {
           <BiCameraMovie /> CineVerse
         </Link>
       </h2>
+      <Link to="/favorites" className="fav-link">
+          Favorites
+      </Link>
+      
       <form onSubmit={handleSubmit}>
         <input 
           type="text" 
@@ -48,13 +52,26 @@ const Nav = styled.nav`
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--primary); /* Violeta do nosso tema */
+    color: var(--primary);
     font-size: 1.5rem;
     font-weight: bold;
     transition: 0.3s;
   }
 
   h2 a:hover {
+    color: var(--secondary);
+  }
+
+  /* Adicionei o estilo do botão Favoritos aqui para ficar limpo */
+  .fav-link {
+    margin-right: auto; /* Empurra a busca para a direita */
+    margin-left: 2rem;
+    font-weight: bold;
+    color: var(--text-white);
+    transition: 0.3s;
+  }
+  
+  .fav-link:hover {
     color: var(--secondary);
   }
 

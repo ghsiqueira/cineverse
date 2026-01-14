@@ -3,7 +3,8 @@ import GlobalStyles from './styles/GlobalStyles';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Movie from './pages/Movie';
-import Search from './pages/Search'; 
+import Search from './pages/Search';
+import Favorites from './pages/Favorites'; 
 
 function App() {
   return (
@@ -15,7 +16,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/movie/:id" element={<Movie />} />
-          <Route path="/search" element={<Search />} /> 
+          <Route path="/search" element={<Search />} />
+          <Route path="/favorites" element={<Favorites />} /> 
         </Routes>
 
       </BrowserRouter>
