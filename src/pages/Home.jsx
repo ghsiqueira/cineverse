@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { BiFilterAlt, BiX, BiInfoCircle, BiPlay } from "react-icons/bi";
+import { BiFilterAlt, BiX, BiInfoCircle, BiPlay, BiSortAlt2 } from "react-icons/bi";
 import MovieCard from "../components/MovieCard";
 import { Skeleton } from "../components/Skeleton";
 import styled from "styled-components";
@@ -18,6 +18,8 @@ const Home = () => {
   const [genres, setGenres] = useState([]);
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  
+  const [sortBy, setSortBy] = useState("vote_average.desc");
 
   const observerTarget = useRef(null);
 
@@ -31,16 +33,19 @@ const Home = () => {
     loadGenres();
   }, []);
 
-  const fetchMovies = async (pageNumber, genreId = null) => {
+  const fetchMovies = async (pageNumber, genreId = null, sort = "vote_average.desc") => {
     setLoading(true);
 
     try {
-      let endpoint = "movie/top_rated";
-      let params = { page: pageNumber };
+      let endpoint = "discover/movie";
+      let params = { 
+        page: pageNumber, 
+        sort_by: sort,
+        "vote_count.gte": 200 
+      };
 
       if (genreId) {
-        endpoint = "discover/movie";
-        params = { page: pageNumber, with_genres: genreId, sort_by: "popularity.desc" };
+        params.with_genres = genreId;
       }
 
       const response = await api.get(endpoint, { params });
@@ -48,8 +53,10 @@ const Home = () => {
 
       if (pageNumber === 1) {
         setMovies(results);
-        const random = results[Math.floor(Math.random() * results.length)];
-        setHeroMovie(random);
+        if (!heroMovie && results.length > 0) {
+            const random = results[Math.floor(Math.random() * results.length)];
+            setHeroMovie(random);
+        }
       } else {
         setMovies((prev) => {
           const newMovies = results.filter(movie => !prev.some(p => p.id === movie.id));
@@ -61,8 +68,8 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchMovies(1, null);
-  }, []);
+    fetchMovies(1, selectedGenre, sortBy);
+  }, [sortBy, selectedGenre]); 
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -70,12 +77,12 @@ const Home = () => {
         if (entries[0].isIntersecting && !loading) {
           setPage((prevPage) => {
             const nextPage = prevPage + 1;
-            fetchMovies(nextPage, selectedGenre);
+            fetchMovies(nextPage, selectedGenre, sortBy);
             return nextPage;
           });
         }
       },
-      { threshold: 1.0 } 
+      { threshold: 1.0 }
     );
 
     if (observerTarget.current) {
@@ -87,18 +94,21 @@ const Home = () => {
         observer.unobserve(observerTarget.current);
       }
     };
-  }, [loading, selectedGenre]); 
+  }, [loading, selectedGenre, sortBy]); 
 
   const handleGenreClick = (genreId) => {
     if (selectedGenre === genreId) {
       setSelectedGenre(null);
       setPage(1);
-      fetchMovies(1, null);
     } else {
       setSelectedGenre(genreId);
       setPage(1);
-      fetchMovies(1, genreId);
     }
+  };
+
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+    setPage(1);
   };
 
   return (
@@ -122,19 +132,32 @@ const Home = () => {
       )}
 
       <MainContent>
-        <div className="header-filter">
-          <h2 className="section-title">
-            {selectedGenre 
-              ? genres.find(g => g.id === selectedGenre)?.name 
-              : "Trending Now"}
-          </h2>
-          
-          <button 
-            className="filter-btn" 
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            {showFilters ? <BiX /> : <BiFilterAlt />} Filter
-          </button>
+        <div className="header-toolbar">
+          <div className="header-left">
+            <h2 className="section-title">
+                {selectedGenre 
+                ? genres.find(g => g.id === selectedGenre)?.name 
+                : "Explore Movies"}
+            </h2>
+          </div>
+
+          <div className="header-actions">
+            <div className="sort-container">
+                <BiSortAlt2 className="sort-icon"/>
+                <select value={sortBy} onChange={handleSortChange}>
+                    <option value="popularity.desc">Most Popular</option>
+                    <option value="vote_average.desc">Top Rated</option>
+                    <option value="primary_release_date.desc">Newest</option>
+                </select>
+            </div>
+
+            <button 
+                className="filter-btn" 
+                onClick={() => setShowFilters(!showFilters)}
+            >
+                {showFilters ? <BiX /> : <BiFilterAlt />} Filter
+            </button>
+          </div>
         </div>
 
         {showFilters && (
@@ -269,15 +292,52 @@ const MainContent = styled.div`
   position: relative;
   z-index: 2;
 
-  .header-filter {
+  .header-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin: 2rem 0;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
 
   .section-title {
     font-size: 2rem;
+    color: var(--text-white);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .sort-container {
+    display: flex;
+    align-items: center;
+    background-color: var(--surface);
+    border-radius: 20px;
+    padding: 0.3rem 1rem;
+    border: 1px solid var(--text-gray);
+  }
+
+  .sort-icon {
+    font-size: 1.2rem;
+    color: var(--primary);
+    margin-right: 0.5rem;
+  }
+
+  select {
+    background: transparent;
+    border: none;
+    color: var(--text-white);
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+  }
+
+  select option {
+    background-color: var(--surface);
     color: var(--text-white);
   }
 
@@ -338,6 +398,17 @@ const MainContent = styled.div`
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @media(max-width: 600px) {
+    .header-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
   }
 `;
 
