@@ -11,7 +11,7 @@ const Home = () => {
       const response = await api.get("movie/top_rated");
       setTopMovies(response.data.results);
     } catch (error) {
-      console.error("Error fetching movies:", error);
+      console.error(error);
     }
   };
 
@@ -39,23 +39,13 @@ const Container = styled.div`
     color: var(--text-white);
   }
 
-  .title span {
-    color: var(--primary);
-  }
-
   .movies-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 2rem;
     padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
-  }
-
-  @media(max-width: 768px) {
-    .movies-container {
-      justify-content: center;
-    }
   }
 `;
 

@@ -62,9 +62,8 @@ const Nav = styled.nav`
     color: var(--secondary);
   }
 
-  /* Adicionei o estilo do botão Favoritos aqui para ficar limpo */
   .fav-link {
-    margin-right: auto; /* Empurra a busca para a direita */
+    margin-right: auto; 
     margin-left: 2rem;
     font-weight: bold;
     color: var(--text-white);

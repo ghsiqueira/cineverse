@@ -18,9 +18,8 @@ const MovieCard = ({ movie, showLink = true }) => {
 };
 
 const Card = styled.div`
-  width: 30%;
+  width: 100%;
   color: var(--text-white);
-  margin-bottom: 2.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -29,6 +28,7 @@ const Card = styled.div`
   border-radius: 1rem;
   transition: transform 0.3s;
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  height: 100%;
 
   &:hover {
     transform: scale(1.03);
@@ -36,9 +36,11 @@ const Card = styled.div`
   }
 
   img {
+    width: 100%;
     max-width: 100%;
     border-radius: 1rem;
     margin-bottom: 1rem;
+    object-fit: cover;
   }
 
   h2 {
@@ -48,7 +50,7 @@ const Card = styled.div`
 
   p {
     margin-bottom: 1rem;
-    color: var(--secondary); /* Ciano para destaque da nota */
+    color: var(--secondary);
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -65,6 +67,7 @@ const Card = styled.div`
     text-align: center;
     font-weight: bold;
     transition: 0.3s;
+    margin-top: auto;
   }
 
   a:hover {

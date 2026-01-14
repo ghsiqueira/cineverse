@@ -38,10 +38,9 @@ const Container = styled.div`
   }
 
   .movies-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start; /* Alinhado à esquerda */
-    gap: 2rem; /* Espaço entre os cards */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 2rem;
     padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
@@ -51,6 +50,7 @@ const Container = styled.div`
     width: 100%;
     text-align: center;
     margin-top: 3rem;
+    grid-column: 1 / -1;
   }
 
   .empty-state p {
@@ -64,12 +64,6 @@ const Container = styled.div`
     font-weight: bold;
     font-size: 1.1rem;
     text-decoration: underline;
-  }
-
-  @media(max-width: 768px) {
-    .movies-container {
-      justify-content: center;
-    }
   }
 `;
 

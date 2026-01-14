@@ -51,18 +51,12 @@ const Container = styled.div`
   }
 
   .movies-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 2rem;
     padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
-  }
-
-  @media(max-width: 768px) {
-    .movies-container {
-      justify-content: center;
-    }
   }
 `;
 
