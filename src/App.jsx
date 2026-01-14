@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import GlobalStyles from './styles/GlobalStyles';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
-import Movie from './pages/Movie'; 
+import Movie from './pages/Movie';
+import Search from './pages/Search'; 
 
 function App() {
   return (
@@ -14,7 +15,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/movie/:id" element={<Movie />} />
-          <Route path="/search" element={<h2>Search Results Placeholder</h2>} />
+          <Route path="/search" element={<Search />} /> 
         </Routes>
 
       </BrowserRouter>
