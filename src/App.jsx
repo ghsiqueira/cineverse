@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Movie from './pages/Movie';
 import Search from './pages/Search';
 import Favorites from './pages/Favorites';
+import Actor from './pages/Actor';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/movie/:id" element={<Movie />} />
         <Route path="/search" element={<Search />} />
         <Route path="/favorites" element={<Favorites />} />
+        <Route path="/actor/:id" element={<Actor />} /> 
       </Routes>
     </BrowserRouter>
   );

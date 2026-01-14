@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom"; 
 import {
   BsGraphUp,
   BsWallet2,
@@ -124,14 +124,16 @@ const Movie = () => {
                 <h3>Top Cast</h3>
                 <div className="cast-list">
                   {cast.map((actor) => (
-                    <div key={actor.id} className="actor-card">
-                      <img 
-                        src={actor.profile_path ? profileUrl + actor.profile_path : "https://via.placeholder.com/100x150?text=No+Img"} 
-                        alt={actor.name} 
-                      />
-                      <p className="actor-name">{actor.name}</p>
-                      <p className="character-name">{actor.character}</p>
-                    </div>
+                    <Link key={actor.id} to={`/actor/${actor.id}`} style={{textDecoration: 'none', color: 'inherit'}}>
+                      <div className="actor-card">
+                        <img 
+                          src={actor.profile_path ? profileUrl + actor.profile_path : "https://via.placeholder.com/100x150?text=No+Img"} 
+                          alt={actor.name} 
+                        />
+                        <p className="actor-name">{actor.name}</p>
+                        <p className="character-name">{actor.character}</p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
