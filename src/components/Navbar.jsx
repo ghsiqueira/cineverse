@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BiCameraMovie, BiSearchAlt2 } from 'react-icons/bi';
+import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX } from 'react-icons/bi';
 import styled from 'styled-components';
 import api from '../services/api';
 
@@ -10,6 +10,7 @@ const Navbar = () => {
   const [search, setSearch] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Novo estado para o Menu Mobile
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,58 +37,69 @@ const Navbar = () => {
     navigate(`/search?q=${search}`);
     setSearch("");
     setShowSuggestions(false);
+    setIsMenuOpen(false); // Fecha o menu ao buscar
   };
 
   const handleSuggestionClick = (id) => {
     navigate(`/movie/${id}`);
     setSearch("");
     setShowSuggestions(false);
+    setIsMenuOpen(false);
   };
 
   return (
     <Nav>
-      <h2>
-        <Link to="/">
-          <BiCameraMovie /> CineVerse
-        </Link>
-      </h2>
-      <Link to="/favorites" className="fav-link">
-          Favorites
-      </Link>
-      
-      <div className="search-container">
-        <form onSubmit={handleSubmit}>
-          <input 
-            type="text" 
-            placeholder="Search for a movie..." 
-            onChange={(e) => setSearch(e.target.value)}
-            value={search}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            onFocus={() => search.length > 2 && setShowSuggestions(true)}
-          />
-          <button type="submit">
-            <BiSearchAlt2 />
-          </button>
-        </form>
+      <div className="nav-header">
+        <h2>
+            <Link to="/" onClick={() => setIsMenuOpen(false)}>
+            <BiCameraMovie /> CineVerse
+            </Link>
+        </h2>
+        {/* Botão do Menu Mobile */}
+        <button className="mobile-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <BiX /> : <BiMenu />}
+        </button>
+      </div>
 
-        {showSuggestions && suggestions.length > 0 && (
-          <ul className="suggestions-list">
-            {suggestions.map((movie) => (
-              <li key={movie.id} onClick={() => handleSuggestionClick(movie.id)}>
-                <img 
-                  src={movie.poster_path ? imageUrl + movie.poster_path : "https://via.placeholder.com/50x75?text=Img"} 
-                  alt={movie.title} 
-                />
-                <div className="suggestion-info">
-                    <span className="suggestion-title">{movie.title}</span>
-                    <span className="suggestion-year">
-                      {movie.release_date ? movie.release_date.split('-')[0] : "-"}
-                    </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className={`nav-content ${isMenuOpen ? "open" : ""}`}>
+        <Link to="/favorites" className="fav-link" onClick={() => setIsMenuOpen(false)}>
+            Favorites
+        </Link>
+        
+        <div className="search-container">
+            <form onSubmit={handleSubmit}>
+            <input 
+                type="text" 
+                placeholder="Search for a movie..." 
+                onChange={(e) => setSearch(e.target.value)}
+                value={search}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onFocus={() => search.length > 2 && setShowSuggestions(true)}
+            />
+            <button type="submit" className="search-btn">
+                <BiSearchAlt2 />
+            </button>
+            </form>
+
+            {showSuggestions && suggestions.length > 0 && (
+            <ul className="suggestions-list">
+                {suggestions.map((movie) => (
+                <li key={movie.id} onClick={() => handleSuggestionClick(movie.id)}>
+                    <img 
+                    src={movie.poster_path ? imageUrl + movie.poster_path : "https://via.placeholder.com/50x75?text=Img"} 
+                    alt={movie.title} 
+                    />
+                    <div className="suggestion-info">
+                        <span className="suggestion-title">{movie.title}</span>
+                        <span className="suggestion-year">
+                        {movie.release_date ? movie.release_date.split('-')[0] : "-"}
+                        </span>
+                    </div>
+                </li>
+                ))}
+            </ul>
+            )}
+        </div>
       </div>
     </Nav>
   );
@@ -103,6 +115,13 @@ const Nav = styled.nav`
   position: relative;
   z-index: 10;
 
+  .nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: auto;
+  }
+
   h2 a {
     display: flex;
     align-items: center;
@@ -117,9 +136,24 @@ const Nav = styled.nav`
     color: var(--secondary);
   }
 
+  .mobile-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-white);
+    cursor: pointer;
+  }
+
+  .nav-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
   .fav-link {
-    margin-right: auto; 
-    margin-left: 2rem;
     font-weight: bold;
     color: var(--text-white);
     transition: 0.3s;
@@ -155,7 +189,7 @@ const Nav = styled.nav`
     border-color: var(--secondary);
   }
 
-  button {
+  .search-btn {
     background-color: var(--primary);
     border: 2px solid var(--primary);
     border-radius: 4px;
@@ -168,7 +202,7 @@ const Nav = styled.nav`
     transition: 0.4s;
   }
 
-  button:hover {
+  .search-btn:hover {
     background-color: transparent;
     color: var(--primary);
   }
@@ -228,21 +262,56 @@ const Nav = styled.nav`
     color: var(--text-gray);
   }
 
+  /* MEDIA QUERIES PARA MOBILE */
   @media(max-width: 768px) {
     flex-direction: column;
-    gap: 1rem;
-    
-    .fav-link {
-        margin: 0;
+    align-items: stretch;
+    padding: 1rem;
+
+    .nav-header {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .mobile-btn {
+      display: block;
+    }
+
+    .nav-content {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin-top: 1rem;
+      gap: 1.5rem;
+    }
+
+    /* Classe ativada pelo JS */
+    .nav-content.open {
+      display: flex;
+      animation: slideDown 0.3s ease;
     }
 
     input {
-        width: 100%;
+      width: 100%;
     }
     
     .search-container {
-        width: 100%;
+      width: 100%;
     }
+    
+    form {
+      width: 100%;
+    }
+    
+    input {
+      flex: 1;
+    }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 `;
 
