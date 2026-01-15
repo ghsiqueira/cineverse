@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX, BiWorld } from 'react-icons/bi';
+import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX, BiWorld, BiDice5 } from 'react-icons/bi';
 import styled from 'styled-components';
 import api from '../services/api';
 import { LanguageContext } from '../context/LanguageContext';
@@ -50,6 +50,22 @@ const Navbar = () => {
     setIsMenuOpen(false);
   };
 
+  const handleSurpriseMe = async () => {
+      try {
+          const randomPage = Math.floor(Math.random() * 10) + 1;
+          const response = await api.get("movie/top_rated", {
+              params: { page: randomPage }
+          });
+          const movies = response.data.results;
+          const randomMovie = movies[Math.floor(Math.random() * movies.length)];
+          
+          navigate(`/movie/${randomMovie.id}`);
+          setIsMenuOpen(false);
+      } catch (error) {
+          console.error(error);
+      }
+  };
+
   return (
     <Nav>
       <div className="nav-header">
@@ -75,9 +91,18 @@ const Navbar = () => {
             </select>
         </div>
 
-        <Link to="/favorites" className="fav-link" onClick={() => setIsMenuOpen(false)}>
-            {language === 'pt-BR' ? 'Favoritos' : 'Favorites'}
-        </Link>
+        <button className="surprise-btn" onClick={handleSurpriseMe} title={language === 'pt-BR' ? "Surpreenda-me" : "Surprise Me"}>
+            <BiDice5 />
+        </button>
+
+        <div className="links-group">
+            <Link to="/favorites" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                {language === 'pt-BR' ? 'Favoritos' : 'Favorites'}
+            </Link>
+            <Link to="/watchlist" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                {language === 'pt-BR' ? 'Quero Ver' : 'Watchlist'}
+            </Link>
+        </div>
         
         <div className="search-container">
             <form onSubmit={handleSubmit}>
@@ -164,7 +189,7 @@ const Nav = styled.nav`
   .nav-content {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 1.5rem;
     flex: 1;
     justify-content: flex-end;
   }
@@ -186,13 +211,36 @@ const Nav = styled.nav`
     outline: none;
   }
 
-  .fav-link {
+  .surprise-btn {
+      background: linear-gradient(45deg, var(--primary), var(--secondary));
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  }
+  
+  .surprise-btn:hover { transform: rotate(180deg) scale(1.1); }
+
+  .links-group {
+      display: flex;
+      gap: 1.5rem;
+  }
+
+  .nav-link {
     font-weight: bold;
     color: var(--text-white);
     transition: 0.3s;
   }
   
-  .fav-link:hover {
+  .nav-link:hover {
     color: var(--secondary);
   }
 
@@ -323,21 +371,12 @@ const Nav = styled.nav`
       animation: slideDown 0.3s ease;
     }
 
-    input {
-      width: 100%;
-    }
-    
-    .search-container {
-      width: 100%;
-    }
-    
-    form {
-      width: 100%;
-    }
-    
-    input {
-      flex: 1;
-    }
+    .links-group { flex-direction: column; align-items: center; gap: 1rem; }
+
+    input { width: 100%; }
+    .search-container { width: 100%; }
+    form { width: 100%; }
+    input { flex: 1; }
   }
 
   @keyframes slideDown {

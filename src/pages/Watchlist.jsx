@@ -4,30 +4,30 @@ import MovieCard from '../components/MovieCard';
 import styled from 'styled-components';
 import { LanguageContext } from '../context/LanguageContext';
 
-const Favorites = () => {
-  const [favoriteMovies, setFavoriteMovies] = useState([]);
+const Watchlist = () => {
+  const [movies, setMovies] = useState([]);
   const { language } = useContext(LanguageContext);
 
   useEffect(() => {
-    const savedMovies = JSON.parse(localStorage.getItem('cineverse_favorites')) || [];
-    setFavoriteMovies(savedMovies);
+    const savedMovies = JSON.parse(localStorage.getItem('cineverse_watchlist')) || [];
+    setMovies(savedMovies);
   }, []);
 
   return (
     <Container>
-      <h2 className="title">{language === 'pt-BR' ? 'Meus Favoritos' : 'My Favorites'}</h2>
+      <h2 className="title">{language === 'pt-BR' ? 'Minha Lista (Quero Ver)' : 'My Watchlist'}</h2>
       <div className="movies-container">
-        {favoriteMovies.length === 0 && (
+        {movies.length === 0 && (
           <div className="empty-state">
-            <p>{language === 'pt-BR' ? 'Você ainda não salvou nenhum filme.' : "You haven't saved any movies yet."}</p>
+            <p>{language === 'pt-BR' ? 'Sua lista está vazia.' : 'Your watchlist is empty.'}</p>
             <Link to="/" className="back-link">
                 {language === 'pt-BR' ? 'Ir para o Início' : 'Go to Home'}
             </Link>
           </div>
         )}
         
-        {favoriteMovies.length > 0 && 
-          favoriteMovies.map((movie) => <MovieCard key={movie.id} movie={movie} />)}
+        {movies.length > 0 && 
+          movies.map((movie) => <MovieCard key={movie.id} movie={movie} />)}
       </div>
     </Container>
   );
@@ -71,4 +71,4 @@ const Container = styled.div`
   }
 `;
 
-export default Favorites;
+export default Watchlist;

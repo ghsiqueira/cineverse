@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Movie from './pages/Movie';
 import Search from './pages/Search';
 import Favorites from './pages/Favorites';
+import Watchlist from './pages/Watchlist';
 import Actor from './pages/Actor';
 import NotFound from './pages/NotFound';
 
@@ -16,7 +17,9 @@ function App() {
         <Route path="/movie/:id" element={<Movie />} />
         <Route path="/search" element={<Search />} />
         <Route path="/favorites" element={<Favorites />} />
+        <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/actor/:id" element={<Actor />} />
+        
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

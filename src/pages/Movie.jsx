@@ -13,7 +13,9 @@ import {
   BsShareFill,
   BsCollectionPlay,
   BsListCheck,
-  BsEye
+  BsEye,
+  BsClockHistory,
+  BsCheckCircle
 } from "react-icons/bs";
 import MovieCard from "../components/MovieCard";
 import VideoModal from "../components/VideoModal";
@@ -69,7 +71,9 @@ const Movie = () => {
   const [recommendations, setRecommendations] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [providers, setProviders] = useState(null); 
+  
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isWatchlist, setIsWatchlist] = useState(false);
   
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [showCollectionModal, setShowCollectionModal] = useState(false);
@@ -86,7 +90,7 @@ const Movie = () => {
       try {
         const movieRes = await api.get(`movie/${id}`);
         setMovie(movieRes.data);
-        checkFavorite(movieRes.data.id);
+        checkLists(movieRes.data.id); 
 
         const videoRes = await api.get(`movie/${id}/videos`);
         const videos = videoRes.data.results;
@@ -120,11 +124,14 @@ const Movie = () => {
     getMovieData();
   }, [id, language]);
 
-  const checkFavorite = (movieId) => {
-    const savedMovies = JSON.parse(localStorage.getItem("cineverse_favorites")) || [];
-    const hasMovie = savedMovies.find((movie) => movie.id === movieId);
-    if (hasMovie) setIsFavorite(true);
-    else setIsFavorite(false);
+  const checkLists = (movieId) => {
+    const savedFavs = JSON.parse(localStorage.getItem("cineverse_favorites")) || [];
+    const hasFav = savedFavs.find((movie) => movie.id === movieId);
+    setIsFavorite(!!hasFav);
+
+    const savedWatch = JSON.parse(localStorage.getItem("cineverse_watchlist")) || [];
+    const hasWatch = savedWatch.find((movie) => movie.id === movieId);
+    setIsWatchlist(!!hasWatch);
   };
 
   const handleFavorite = () => {
@@ -137,6 +144,19 @@ const Movie = () => {
       savedMovies.push(movie);
       localStorage.setItem("cineverse_favorites", JSON.stringify(savedMovies));
       setIsFavorite(true);
+    }
+  };
+
+  const handleWatchlist = () => {
+    const savedMovies = JSON.parse(localStorage.getItem("cineverse_watchlist")) || [];
+    if (isWatchlist) {
+      const newFiles = savedMovies.filter((m) => m.id !== movie.id);
+      localStorage.setItem("cineverse_watchlist", JSON.stringify(newFiles));
+      setIsWatchlist(false);
+    } else {
+      savedMovies.push(movie);
+      localStorage.setItem("cineverse_watchlist", JSON.stringify(savedMovies));
+      setIsWatchlist(true);
     }
   };
 
@@ -156,7 +176,6 @@ const Movie = () => {
     }
   };
 
-  // Funções da Coleção
   const fetchCollection = async () => {
       if (!movie.belongs_to_collection) return;
       try {
@@ -184,7 +203,6 @@ const Movie = () => {
       parts.forEach(part => {
           const exists = savedMovies.find(m => m.id === part.id);
           if(!exists) {
-              // A lista de parts tem menos detalhes, mas serve para o card
               savedMovies.push(part);
               addedCount++;
           }
@@ -195,7 +213,7 @@ const Movie = () => {
         ? `${addedCount} filmes adicionados aos Favoritos!` 
         : `${addedCount} movies added to Favorites!`);
       
-      checkFavorite(movie.id); 
+      checkLists(movie.id); 
   };
 
   const formatCurrency = (number) => {
@@ -235,7 +253,7 @@ const Movie = () => {
       {showCollectionModal && (
           <CollectionModal 
             collection={collectionParts} 
-            collectionInfo={movie.belongs_to_collection}
+            collectionInfo={movie.belongs_to_collection} 
             onClose={() => setShowCollectionModal(false)} 
           />
       )}
@@ -245,13 +263,16 @@ const Movie = () => {
           <div className="card-column">
             <MovieCard movie={movie} showLink={false} />
             <div className="action-buttons">
-                <Button onClick={handleFavorite} $isFavorite={isFavorite}>
-                {isFavorite ? (
-                    <><BsBookmarkCheckFill /> {language === 'pt-BR' ? "Salvo" : "Saved"}</>
-                ) : (
-                    <><BsBookmarkPlus /> {language === 'pt-BR' ? "Salvar" : "Save"}</>
-                )}
+                <Button onClick={handleFavorite} $active={isFavorite} $type="fav">
+                    {isFavorite ? <BsBookmarkCheckFill /> : <BsBookmarkPlus />}
+                    <span>{isFavorite ? (language === 'pt-BR' ? "Salvo" : "Saved") : (language === 'pt-BR' ? "Favoritos" : "Favorites")}</span>
                 </Button>
+
+                <Button onClick={handleWatchlist} $active={isWatchlist} $type="watch">
+                    {isWatchlist ? <BsCheckCircle /> : <BsClockHistory />}
+                    <span>{isWatchlist ? (language === 'pt-BR' ? "Na Lista" : "On List") : (language === 'pt-BR' ? "Quero Ver" : "Watchlist")}</span>
+                </Button>
+
                 <ShareButton onClick={handleShare}>
                     <BsShareFill />
                 </ShareButton>
@@ -281,7 +302,6 @@ const Movie = () => {
               <p>{movie.overview}</p>
             </div>
             
-            {/* SAGA / COLEÇÃO */}
             {movie.belongs_to_collection && (
                 <CollectionBanner background={backdropUrl + movie.belongs_to_collection.backdrop_path}>
                     <div className="collection-info">
@@ -584,66 +604,6 @@ const Container = styled.div`
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;
   }
-`;
-
-const Button = styled.button`
-  flex: 1;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border: none;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: 0.3s;
-  background-color: ${props => props.$isFavorite ? '#ffffff' : 'var(--primary)'};
-  color: ${props => props.$isFavorite ? '#000000' : '#ffffff'};
-  
-  svg {
-    fill: ${props => props.$isFavorite ? '#000000' : '#ffffff'};
-  }
-
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-const ShareButton = styled.button`
-  width: 60px;
-  background-color: var(--surface);
-  border: 1px solid var(--primary);
-  color: var(--primary);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: 0.3s;
-
-  &:hover {
-    background-color: var(--primary);
-    color: white;
-  }
-`;
-
-const CollectionBanner = styled.div`
-  width: 100%;
-  height: 150px;
-  background-image: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.4)), url(${props => props.background});
-  background-size: cover;
-  background-position: center;
-  border-radius: 1rem;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2rem;
-  border: 1px solid var(--primary);
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
 
   .collection-info h3 {
     color: var(--primary);
@@ -693,14 +653,80 @@ const CollectionBanner = styled.div`
   .col-btn.add:hover { background-color: var(--secondary); }
 
   @media(max-width: 600px) {
+      .collection-info h3 { justify-content: center; }
+      .collection-actions { flex-direction: row; }
+  }
+`;
+
+const Button = styled.button`
+  flex: 1;
+  padding: 0.8rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  cursor: pointer;
+  transition: 0.3s;
+  
+  background-color: ${props => props.$active ? '#ffffff' : (props.$type === 'fav' ? 'var(--primary)' : 'var(--surface)')};
+  color: ${props => props.$active ? '#000000' : '#ffffff'};
+  border: ${props => props.$type === 'watch' && !props.$active ? '1px solid white' : 'none'};
+  
+  svg {
+    font-size: 1.2rem;
+    fill: ${props => props.$active ? '#000000' : '#ffffff'};
+  }
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+const ShareButton = styled.button`
+  width: 50px;
+  background-color: var(--surface);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: 0.3s;
+
+  &:hover {
+    background-color: var(--primary);
+    color: white;
+  }
+`;
+
+const CollectionBanner = styled.div`
+  width: 100%;
+  height: 150px;
+  background-image: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.4)), url(${props => props.background});
+  background-size: cover;
+  background-position: center;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  border: 1px solid var(--primary);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+
+  @media(max-width: 600px) {
       flex-direction: column;
       height: auto;
       padding: 1.5rem;
       gap: 1rem;
       text-align: center;
-      
-      .collection-info h3 { justify-content: center; }
-      .collection-actions { flex-direction: row; }
   }
 `;
 

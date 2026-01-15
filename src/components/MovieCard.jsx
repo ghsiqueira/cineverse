@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { FaStar } from 'react-icons/fa';
 import styled from 'styled-components';
 import { Skeleton } from './Skeleton'; 
+import { LanguageContext } from '../context/LanguageContext';
 
 const imageUrl = import.meta.env.VITE_IMG || "https://image.tmdb.org/t/p/w500/";
 
 const MovieCard = ({ movie, showLink = true }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const { language } = useContext(LanguageContext);
 
   return (
     <Card>
@@ -25,10 +27,14 @@ const MovieCard = ({ movie, showLink = true }) => {
       <h2>{movie.title}</h2>
       
       <p>
-        <FaStar /> {movie.vote_average}
+        <FaStar /> {movie.vote_average.toFixed(1)}
       </p>
       
-      {showLink && <Link to={`/movie/${movie.id}`}>Details</Link>}
+      {showLink && (
+        <Link to={`/movie/${movie.id}`}>
+            {language === 'pt-BR' ? 'Detalhes' : 'Details'}
+        </Link>
+      )}
     </Card>
   );
 };
