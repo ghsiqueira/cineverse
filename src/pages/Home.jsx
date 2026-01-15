@@ -7,6 +7,7 @@ import VideoModal from "../components/VideoModal";
 import styled from "styled-components";
 import api from "../services/api";
 import { LanguageContext } from '../context/LanguageContext';
+import { motion } from "framer-motion";
 
 const imageUrl = import.meta.env.VITE_IMG || "https://image.tmdb.org/t/p/w500/";
 const backdropUrl = "https://image.tmdb.org/t/p/original/";
@@ -136,7 +137,13 @@ const Home = () => {
   };
 
   return (
-    <Container>
+    <Container
+        as={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+    >
       {showModal && heroTrailer && (
         <VideoModal trailerKey={heroTrailer} onClose={() => setShowModal(false)} />
       )}

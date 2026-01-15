@@ -24,6 +24,7 @@ import { Skeleton } from "../components/Skeleton";
 import styled from "styled-components";
 import api from "../services/api";
 import { LanguageContext } from '../context/LanguageContext';
+import { motion } from "framer-motion";
 
 const profileUrl = "https://image.tmdb.org/t/p/w185/";
 const logoUrl = "https://image.tmdb.org/t/p/original/";
@@ -245,7 +246,13 @@ const Movie = () => {
   }
 
   return (
-    <Container>
+    <Container
+        as={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+    >
       {showTrailerModal && trailerKey && (
         <VideoModal trailerKey={trailerKey} onClose={() => setShowTrailerModal(false)} />
       )}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import styled from 'styled-components';
 import { LanguageContext } from '../context/LanguageContext';
+import { motion } from "framer-motion";
 
 const Watchlist = () => {
   const [movies, setMovies] = useState([]);
@@ -14,7 +15,13 @@ const Watchlist = () => {
   }, []);
 
   return (
-    <Container>
+    <Container
+        as={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+    >
       <h2 className="title">{language === 'pt-BR' ? 'Minha Lista (Quero Ver)' : 'My Watchlist'}</h2>
       <div className="movies-container">
         {movies.length === 0 && (

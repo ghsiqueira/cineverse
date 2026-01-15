@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import MovieCard from "../components/MovieCard";
 import styled from "styled-components";
 import api from "../services/api";
+import { motion } from "framer-motion";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +25,13 @@ const Search = () => {
   }, [query]);
 
   return (
-    <Container>
+    <Container
+        as={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+    >
       <h2 className="title">
         Results for: <span className="query-text">{query}</span>
       </h2>

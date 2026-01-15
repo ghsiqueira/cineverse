@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Movie from './pages/Movie';
@@ -8,11 +10,12 @@ import Watchlist from './pages/Watchlist';
 import Actor from './pages/Actor';
 import NotFound from './pages/NotFound';
 
-function App() {
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
   return (
-    <BrowserRouter>
-      <Navbar />
-      <Routes>
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/movie/:id" element={<Movie />} />
         <Route path="/search" element={<Search />} />
@@ -22,6 +25,15 @@ function App() {
         
         <Route path="*" element={<NotFound />} />
       </Routes>
+    </AnimatePresence>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Navbar />
+      <AnimatedRoutes />
     </BrowserRouter>
   );
 }

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { BiErrorCircle } from 'react-icons/bi';
+import { motion } from "framer-motion";
 
 const NotFound = () => {
   const messages = [
@@ -22,7 +23,13 @@ const NotFound = () => {
   }, []);
 
   return (
-    <Container>
+    <Container
+        as={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+    >
       <div className="content">
         <BiErrorCircle className="icon" />
         <h1>404</h1>
