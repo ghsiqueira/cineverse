@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
-import { BiFilterAlt, BiX, BiInfoCircle, BiPlay, BiSortAlt2 } from "react-icons/bi";
+import { BiFilterAlt, BiX, BiInfoCircle, BiPlay, BiSortAlt2, BiCalendar, BiStar } from "react-icons/bi";
 import MovieCard from "../components/MovieCard";
 import { Skeleton } from "../components/Skeleton";
 import VideoModal from "../components/VideoModal"; 
@@ -23,6 +23,11 @@ const Home = () => {
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("vote_average.desc");
+
+  const [year, setYear] = useState("");
+  
+  const [minRating, setMinRating] = useState(0); 
+  const [displayRating, setDisplayRating] = useState(0); 
 
   const { language } = useContext(LanguageContext);
   const observerTarget = useRef(null);
@@ -47,7 +52,7 @@ const Home = () => {
     } catch (e) { console.error(e); }
   };
 
-  const fetchMovies = async (pageNumber, genreId = null, sort = "vote_average.desc") => {
+  const fetchMovies = async (pageNumber, genreId = null, sort = "vote_average.desc", yearFilter = "", ratingFilter = 0) => {
     setLoading(true);
 
     try {
@@ -55,8 +60,13 @@ const Home = () => {
       let params = { 
         page: pageNumber, 
         sort_by: sort,
-        "vote_count.gte": 200 
+        "vote_count.gte": 200,
+        "vote_average.gte": ratingFilter,
       };
+
+      if (yearFilter) {
+          params.primary_release_year = yearFilter;
+      }
 
       if (genreId) {
         params.with_genres = genreId;
@@ -83,10 +93,10 @@ const Home = () => {
   };
 
   useEffect(() => {
-    setMovies([]); 
     setHeroMovie(null); 
-    fetchMovies(1, selectedGenre, sortBy);
-  }, [sortBy, selectedGenre, language]); 
+    setPage(1);
+    fetchMovies(1, selectedGenre, sortBy, year, minRating);
+  }, [sortBy, selectedGenre, language, year, minRating]); 
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -94,7 +104,7 @@ const Home = () => {
         if (entries[0].isIntersecting && !loading) {
           setPage((prevPage) => {
             const nextPage = prevPage + 1;
-            fetchMovies(nextPage, selectedGenre, sortBy);
+            fetchMovies(nextPage, selectedGenre, sortBy, year, minRating);
             return nextPage;
           });
         }
@@ -111,21 +121,18 @@ const Home = () => {
         observer.unobserve(observerTarget.current);
       }
     };
-  }, [loading, selectedGenre, sortBy, language]); 
+  }, [loading, selectedGenre, sortBy, language, year, minRating]); 
 
   const handleGenreClick = (genreId) => {
-    if (selectedGenre === genreId) {
-      setSelectedGenre(null);
-      setPage(1);
-    } else {
-      setSelectedGenre(genreId);
-      setPage(1);
-    }
+    setSelectedGenre(selectedGenre === genreId ? null : genreId);
   };
 
   const handleSortChange = (e) => {
     setSortBy(e.target.value);
-    setPage(1);
+  };
+
+  const handleRatingCommit = () => {
+      setMinRating(displayRating);
   };
 
   return (
@@ -184,16 +191,43 @@ const Home = () => {
         </div>
 
         {showFilters && (
-          <div className="genres-list fade-in">
-            {genres.map((genre) => (
-              <button 
-                key={genre.id} 
-                onClick={() => handleGenreClick(genre.id)}
-                className={selectedGenre === genre.id ? "active" : ""}
-              >
-                {genre.name}
-              </button>
-            ))}
+          <div className="filters-panel fade-in">
+             <div className="advanced-filters">
+                <div className="filter-group">
+                    <label><BiCalendar /> {language === 'pt-BR' ? "Ano:" : "Year:"}</label>
+                    <input 
+                        type="number" 
+                        placeholder="Ex: 2023"
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                    />
+                </div>
+                <div className="filter-group">
+                    <label><BiStar /> {language === 'pt-BR' ? `Nota Mínima: ${displayRating}` : `Min Rating: ${displayRating}`}</label>
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="10" 
+                        step="1"
+                        value={displayRating}
+                        onChange={(e) => setDisplayRating(e.target.value)}
+                        onMouseUp={handleRatingCommit} 
+                        onTouchEnd={handleRatingCommit} 
+                    />
+                </div>
+             </div>
+
+             <div className="genres-list">
+                {genres.map((genre) => (
+                <button 
+                    key={genre.id} 
+                    onClick={() => handleGenreClick(genre.id)}
+                    className={selectedGenre === genre.id ? "active" : ""}
+                >
+                    {genre.name}
+                </button>
+                ))}
+            </div>
           </div>
         )}
 
@@ -390,14 +424,56 @@ const MainContent = styled.div`
     color: var(--primary);
   }
 
+  .filters-panel {
+    background-color: var(--surface);
+    padding: 1.5rem;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--primary);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+
+  .advanced-filters {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+  }
+
+  .filter-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: bold;
+      color: var(--primary);
+  }
+
+  .filter-group input[type="number"] {
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--text-gray);
+      background: var(--background);
+      color: white;
+      width: 120px;
+  }
+
+  .filter-group input[type="range"] {
+      accent-color: var(--primary);
+      width: 200px;
+      cursor: pointer;
+  }
+
   .genres-list {
     display: flex;
     flex-wrap: wrap;
     gap: 0.8rem;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background-color: var(--surface);
-    border-radius: 1rem;
   }
   
   .fade-in { animation: fadeIn 0.5s ease-in; }
@@ -439,6 +515,11 @@ const MainContent = styled.div`
         width: 100%;
         justify-content: space-between;
     }
+    .advanced-filters {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .filter-group input[type="range"] { width: 100%; }
   }
 `;
 
