@@ -11,27 +11,31 @@ const MovieCard = ({ movie, showLink = true }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const { language } = useContext(LanguageContext);
 
+  const isSeries = movie.name && !movie.title; 
+  const title = movie.title || movie.name;
+  const linkPath = isSeries ? `/tv/${movie.id}` : `/movie/${movie.id}`;
+
   return (
     <Card>
       <div className="img-container">
         {!imageLoaded && <Skeleton height="330px" mb="1rem" />}
         
         <img 
-          src={imageUrl + movie.poster_path} 
-          alt={movie.title} 
+          src={movie.poster_path ? imageUrl + movie.poster_path : "https://via.placeholder.com/500x750?text=No+Img"} 
+          alt={title} 
           onLoad={() => setImageLoaded(true)}
           style={{ display: imageLoaded ? 'block' : 'none' }}
         />
       </div>
 
-      <h2>{movie.title}</h2>
+      <h2>{title}</h2>
       
       <p>
-        <FaStar /> {movie.vote_average.toFixed(1)}
+        <FaStar /> {movie.vote_average ? movie.vote_average.toFixed(1) : "N/A"}
       </p>
       
       {showLink && (
-        <Link to={`/movie/${movie.id}`}>
+        <Link to={linkPath}>
             {language === 'pt-BR' ? 'Detalhes' : 'Details'}
         </Link>
       )}

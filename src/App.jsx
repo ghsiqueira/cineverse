@@ -9,6 +9,7 @@ import Favorites from './pages/Favorites';
 import Watchlist from './pages/Watchlist';
 import Actor from './pages/Actor';
 import NotFound from './pages/NotFound';
+import Series from './pages/Series'; 
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -18,6 +19,7 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/movie/:id" element={<Movie />} />
+        <Route path="/tv/:id" element={<Series />} /> 
         <Route path="/search" element={<Search />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/watchlist" element={<Watchlist />} />

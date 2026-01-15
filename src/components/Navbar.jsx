@@ -20,8 +20,13 @@ const Navbar = () => {
     const delayDebounceFn = setTimeout(async () => {
       if (search.length > 2) {
         try {
-          const response = await api.get(`search/movie?query=${search}`);
-          setSuggestions(response.data.results.slice(0, 5));
+          const response = await api.get(`search/multi?query=${search}`);
+          
+          const filtered = response.data.results.filter(
+              item => item.media_type === 'movie' || item.media_type === 'tv'
+          );
+
+          setSuggestions(filtered.slice(0, 5));
           setShowSuggestions(true);
         } catch (error) {
           console.error(error);
@@ -43,8 +48,9 @@ const Navbar = () => {
     setIsMenuOpen(false); 
   };
 
-  const handleSuggestionClick = (id) => {
-    navigate(`/movie/${id}`);
+  const handleSuggestionClick = (item) => {
+    const type = item.media_type === 'tv' ? 'tv' : 'movie';
+    navigate(`/${type}/${item.id}`);
     setSearch("");
     setShowSuggestions(false);
     setIsMenuOpen(false);
@@ -108,7 +114,7 @@ const Navbar = () => {
             <form onSubmit={handleSubmit}>
             <input 
                 type="text" 
-                placeholder={language === 'pt-BR' ? "Buscar filme..." : "Search for a movie..."}
+                placeholder={language === 'pt-BR' ? "Buscar..." : "Search..."}
                 onChange={(e) => setSearch(e.target.value)}
                 value={search}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
@@ -121,19 +127,22 @@ const Navbar = () => {
 
             {showSuggestions && suggestions.length > 0 && (
             <ul className="suggestions-list">
-                {suggestions.map((movie) => (
+                {suggestions.map((item) => (
                 <li 
-                    key={movie.id} 
-                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(movie.id); }}
+                    key={item.id} 
+                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(item); }}
                 >
                     <img 
-                    src={movie.poster_path ? imageUrl + movie.poster_path : "https://via.placeholder.com/50x75?text=Img"} 
-                    alt={movie.title} 
+                    src={item.poster_path ? imageUrl + item.poster_path : "https://via.placeholder.com/50x75?text=Img"} 
+                    alt={item.title || item.name} 
                     />
                     <div className="suggestion-info">
-                        <span className="suggestion-title">{movie.title}</span>
+                        <span className="suggestion-title">{item.title || item.name}</span>
                         <span className="suggestion-year">
-                        {movie.release_date ? movie.release_date.split('-')[0] : "-"}
+                        {item.release_date 
+                            ? item.release_date.split('-')[0] 
+                            : (item.first_air_date ? item.first_air_date.split('-')[0] : "-")}
+                         • {item.media_type === 'tv' ? 'TV' : 'Movie'}
                         </span>
                     </div>
                 </li>

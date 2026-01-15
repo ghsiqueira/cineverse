@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
-import { BiFilterAlt, BiX, BiInfoCircle, BiPlay, BiSortAlt2, BiCalendar, BiStar } from "react-icons/bi";
+import { BiFilterAlt, BiX, BiInfoCircle, BiPlay, BiSortAlt2, BiCalendar, BiStar, BiMoviePlay, BiTv } from "react-icons/bi";
 import MovieCard from "../components/MovieCard";
 import { Skeleton } from "../components/Skeleton";
 import VideoModal from "../components/VideoModal"; 
@@ -9,7 +9,6 @@ import api from "../services/api";
 import { LanguageContext } from '../context/LanguageContext';
 import { motion } from "framer-motion";
 
-const imageUrl = import.meta.env.VITE_IMG || "https://image.tmdb.org/t/p/w500/";
 const backdropUrl = "https://image.tmdb.org/t/p/original/";
 
 const Home = () => {
@@ -20,13 +19,14 @@ const Home = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   
+  const [mediaType, setMediaType] = useState("movie"); 
+
   const [genres, setGenres] = useState([]);
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState("vote_average.desc");
 
   const [year, setYear] = useState("");
-  
   const [minRating, setMinRating] = useState(0); 
   const [displayRating, setDisplayRating] = useState(0); 
 
@@ -36,16 +36,16 @@ const Home = () => {
   useEffect(() => {
     const loadGenres = async () => {
       try {
-        const response = await api.get("genre/movie/list");
+        const response = await api.get(`genre/${mediaType}/list`);
         setGenres(response.data.genres);
       } catch (error) { console.error(error); }
     };
     loadGenres();
-  }, [language]);
+  }, [language, mediaType]);
 
-  const fetchHeroExtras = async (movieId) => {
+  const fetchHeroExtras = async (id) => {
     try {
-        const videosRes = await api.get(`movie/${movieId}/videos`);
+        const videosRes = await api.get(`${mediaType}/${id}/videos`);
         const trailer = videosRes.data.results.find(
             (vid) => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
         );
@@ -53,11 +53,11 @@ const Home = () => {
     } catch (e) { console.error(e); }
   };
 
-  const fetchMovies = async (pageNumber, genreId = null, sort = "vote_average.desc", yearFilter = "", ratingFilter = 0) => {
+  const fetchContent = async (pageNumber, genreId = null, sort = "vote_average.desc", yearFilter = "", ratingFilter = 0) => {
     setLoading(true);
 
     try {
-      let endpoint = "discover/movie";
+      let endpoint = `discover/${mediaType}`;
       let params = { 
         page: pageNumber, 
         sort_by: sort,
@@ -66,7 +66,8 @@ const Home = () => {
       };
 
       if (yearFilter) {
-          params.primary_release_year = yearFilter;
+          if(mediaType === 'movie') params.primary_release_year = yearFilter;
+          else params.first_air_date_year = yearFilter;
       }
 
       if (genreId) {
@@ -96,8 +97,8 @@ const Home = () => {
   useEffect(() => {
     setHeroMovie(null); 
     setPage(1);
-    fetchMovies(1, selectedGenre, sortBy, year, minRating);
-  }, [sortBy, selectedGenre, language, year, minRating]); 
+    fetchContent(1, selectedGenre, sortBy, year, minRating);
+  }, [sortBy, selectedGenre, language, year, minRating, mediaType]); 
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -105,7 +106,7 @@ const Home = () => {
         if (entries[0].isIntersecting && !loading) {
           setPage((prevPage) => {
             const nextPage = prevPage + 1;
-            fetchMovies(nextPage, selectedGenre, sortBy, year, minRating);
+            fetchContent(nextPage, selectedGenre, sortBy, year, minRating);
             return nextPage;
           });
         }
@@ -122,7 +123,15 @@ const Home = () => {
         observer.unobserve(observerTarget.current);
       }
     };
-  }, [loading, selectedGenre, sortBy, language, year, minRating]); 
+  }, [loading, selectedGenre, sortBy, language, year, minRating, mediaType]); 
+
+  const handleMediaTypeChange = (type) => {
+      setMediaType(type);
+      setHeroMovie(null);
+      setMovies([]);
+      setPage(1);
+      setSelectedGenre(null);
+  };
 
   const handleGenreClick = (genreId) => {
     setSelectedGenre(selectedGenre === genreId ? null : genreId);
@@ -151,7 +160,7 @@ const Home = () => {
       {heroMovie && (
         <HeroSection background={backdropUrl + heroMovie.backdrop_path}>
           <div className="hero-content">
-            <h1>{heroMovie.title}</h1>
+            <h1>{heroMovie.title || heroMovie.name}</h1>
             <p className="overview">{heroMovie.overview}</p>
             
             <div className="buttons">
@@ -159,7 +168,7 @@ const Home = () => {
                 <BiPlay /> {language === 'pt-BR' ? 'Trailer' : 'Trailer'}
               </button>
 
-              <Link to={`/movie/${heroMovie.id}`} className="btn-outline">
+              <Link to={`/${mediaType}/${heroMovie.id}`} className="btn-outline">
                 <BiInfoCircle /> {language === 'pt-BR' ? 'Mais Detalhes' : 'More Info'}
               </Link>
             </div>
@@ -169,12 +178,29 @@ const Home = () => {
       )}
 
       <MainContent>
+        <div className="media-selector-container">
+            <div className="media-toggle">
+                <button 
+                    className={mediaType === 'movie' ? 'active' : ''} 
+                    onClick={() => handleMediaTypeChange('movie')}
+                >
+                    <BiMoviePlay /> {language === 'pt-BR' ? 'Filmes' : 'Movies'}
+                </button>
+                <button 
+                    className={mediaType === 'tv' ? 'active' : ''} 
+                    onClick={() => handleMediaTypeChange('tv')}
+                >
+                    <BiTv /> {language === 'pt-BR' ? 'Séries' : 'TV Series'}
+                </button>
+            </div>
+        </div>
+
         <div className="header-toolbar">
           <div className="header-left">
             <h2 className="section-title">
                 {selectedGenre 
                 ? genres.find(g => g.id === selectedGenre)?.name 
-                : (language === 'pt-BR' ? "Explorar Filmes" : "Explore Movies")}
+                : (language === 'pt-BR' ? "Explorar" : "Explore")}
             </h2>
           </div>
 
@@ -182,9 +208,9 @@ const Home = () => {
             <div className="sort-container">
                 <BiSortAlt2 className="sort-icon"/>
                 <select value={sortBy} onChange={handleSortChange}>
-                    <option value="popularity.desc">{language === 'pt-BR' ? "Mais Populares" : "Most Popular"}</option>
-                    <option value="vote_average.desc">{language === 'pt-BR' ? "Melhores Avaliados" : "Top Rated"}</option>
-                    <option value="primary_release_date.desc">{language === 'pt-BR' ? "Lançamentos" : "Newest"}</option>
+                    <option value="popularity.desc">{language === 'pt-BR' ? "Populares" : "Popular"}</option>
+                    <option value="vote_average.desc">{language === 'pt-BR' ? "Melhores" : "Top Rated"}</option>
+                    <option value="first_air_date.desc">{language === 'pt-BR' ? "Novidades" : "Newest"}</option>
                 </select>
             </div>
 
@@ -210,7 +236,7 @@ const Home = () => {
                     />
                 </div>
                 <div className="filter-group">
-                    <label><BiStar /> {language === 'pt-BR' ? `Nota Mínima: ${displayRating}` : `Min Rating: ${displayRating}`}</label>
+                    <label><BiStar /> {language === 'pt-BR' ? `Nota: ${displayRating}` : `Rating: ${displayRating}`}</label>
                     <input 
                         type="range" 
                         min="0" 
@@ -363,11 +389,52 @@ const MainContent = styled.div`
   position: relative;
   z-index: 2;
 
+  .media-selector-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+  }
+
+  .media-toggle {
+    display: flex;
+    background-color: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(5px);
+    border-radius: 50px;
+    padding: 0.4rem;
+    border: 1px solid var(--primary);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  .media-toggle button {
+    padding: 0.6rem 2rem;
+    border-radius: 40px;
+    border: none;
+    background: transparent;
+    color: var(--text-gray);
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .media-toggle button:hover {
+      color: white;
+  }
+
+  .media-toggle button.active {
+    background-color: var(--primary);
+    color: white;
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4);
+  }
+
   .header-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 2rem 0;
+    margin: 1rem 0 2rem;
     flex-wrap: wrap;
     gap: 1rem;
   }
@@ -527,6 +594,8 @@ const MainContent = styled.div`
         gap: 1rem;
     }
     .filter-group input[type="range"] { width: 100%; }
+    .media-selector-container { margin-top: 1rem; }
+    .media-toggle button { padding: 0.5rem 1rem; font-size: 0.9rem; }
   }
 `;
 
