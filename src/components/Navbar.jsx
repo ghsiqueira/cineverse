@@ -97,7 +97,10 @@ const Navbar = () => {
             {showSuggestions && suggestions.length > 0 && (
             <ul className="suggestions-list">
                 {suggestions.map((movie) => (
-                <li key={movie.id} onClick={() => handleSuggestionClick(movie.id)}>
+                <li 
+                    key={movie.id} 
+                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(movie.id); }}
+                >
                     <img 
                     src={movie.poster_path ? imageUrl + movie.poster_path : "https://via.placeholder.com/50x75?text=Img"} 
                     alt={movie.title} 

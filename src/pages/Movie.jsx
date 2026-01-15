@@ -9,16 +9,23 @@ import {
   BsBookmarkCheckFill,
   BsPlayBtn,
   BsFillChatQuoteFill,
-  BsTv
+  BsTv,
+  BsShareFill,
+  BsCollectionPlay,
+  BsListCheck,
+  BsEye
 } from "react-icons/bs";
 import MovieCard from "../components/MovieCard";
 import VideoModal from "../components/VideoModal";
+import CollectionModal from "../components/CollectionModal";
+import { Skeleton } from "../components/Skeleton"; 
 import styled from "styled-components";
 import api from "../services/api";
 import { LanguageContext } from '../context/LanguageContext';
 
 const profileUrl = "https://image.tmdb.org/t/p/w185/";
 const logoUrl = "https://image.tmdb.org/t/p/original/";
+const backdropUrl = "https://image.tmdb.org/t/p/original/";
 
 const ReviewItem = ({ review, language }) => {
   const [expanded, setExpanded] = useState(false);
@@ -63,12 +70,17 @@ const Movie = () => {
   const [reviews, setReviews] = useState([]);
   const [providers, setProviders] = useState(null); 
   const [isFavorite, setIsFavorite] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [collectionParts, setCollectionParts] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   const { language } = useContext(LanguageContext);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setLoading(true);
 
     const getMovieData = async () => {
       try {
@@ -93,7 +105,6 @@ const Movie = () => {
         const reviewsRes = await api.get(`movie/${id}/reviews`);
         setReviews(reviewsRes.data.results);
 
-        // Streaming Data
         const providerRes = await api.get(`movie/${id}/watch/providers`);
         if (providerRes.data.results && providerRes.data.results.BR) {
             setProviders(providerRes.data.results.BR);
@@ -101,6 +112,8 @@ const Movie = () => {
 
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -127,6 +140,64 @@ const Movie = () => {
     }
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: movie.title,
+          text: `Check out ${movie.title} on CineVerse!`,
+          url: window.location.href,
+        });
+      } catch (error) {
+        console.log('Error sharing', error);
+      }
+    } else {
+      alert("Sharing is not supported on this browser.");
+    }
+  };
+
+  // Funções da Coleção
+  const fetchCollection = async () => {
+      if (!movie.belongs_to_collection) return;
+      try {
+          const res = await api.get(`collection/${movie.belongs_to_collection.id}`);
+          setCollectionParts(res.data.parts);
+          return res.data.parts;
+      } catch (error) {
+          console.error(error);
+          return [];
+      }
+  };
+
+  const openCollectionModal = async () => {
+      await fetchCollection();
+      setShowCollectionModal(true);
+  };
+
+  const addCollectionToFavorites = async () => {
+      const parts = await fetchCollection();
+      if(parts.length === 0) return;
+
+      const savedMovies = JSON.parse(localStorage.getItem("cineverse_favorites")) || [];
+      let addedCount = 0;
+
+      parts.forEach(part => {
+          const exists = savedMovies.find(m => m.id === part.id);
+          if(!exists) {
+              // A lista de parts tem menos detalhes, mas serve para o card
+              savedMovies.push(part);
+              addedCount++;
+          }
+      });
+
+      localStorage.setItem("cineverse_favorites", JSON.stringify(savedMovies));
+      alert(language === 'pt-BR' 
+        ? `${addedCount} filmes adicionados aos Favoritos!` 
+        : `${addedCount} movies added to Favorites!`);
+      
+      checkFavorite(movie.id); 
+  };
+
   const formatCurrency = (number) => {
     return number.toLocaleString("en-US", {
       style: "currency",
@@ -134,23 +205,57 @@ const Movie = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <Container>
+        <div className="card-column">
+             <Skeleton height="500px" mb="1rem" />
+             <Skeleton height="50px" />
+        </div>
+        <div className="info-grid">
+             <Skeleton height="40px" width="60%" mb="2rem" />
+             <div className="stats-row">
+                 <Skeleton height="60px" width="100px" />
+                 <Skeleton height="60px" width="100px" />
+                 <Skeleton height="60px" width="100px" />
+             </div>
+             <Skeleton height="150px" mb="2rem" />
+             <Skeleton height="200px" />
+        </div>
+      </Container>
+    );
+  }
+
   return (
     <Container>
-      {showModal && trailerKey && (
-        <VideoModal trailerKey={trailerKey} onClose={() => setShowModal(false)} />
+      {showTrailerModal && trailerKey && (
+        <VideoModal trailerKey={trailerKey} onClose={() => setShowTrailerModal(false)} />
+      )}
+
+      {showCollectionModal && (
+          <CollectionModal 
+            collection={collectionParts} 
+            collectionInfo={movie.belongs_to_collection}
+            onClose={() => setShowCollectionModal(false)} 
+          />
       )}
 
       {movie && (
         <>
           <div className="card-column">
             <MovieCard movie={movie} showLink={false} />
-            <Button onClick={handleFavorite} $isFavorite={isFavorite}>
-              {isFavorite ? (
-                <><BsBookmarkCheckFill /> {language === 'pt-BR' ? "Salvo" : "Saved"}</>
-              ) : (
-                <><BsBookmarkPlus /> {language === 'pt-BR' ? "Salvar Favorito" : "Add to Favorites"}</>
-              )}
-            </Button>
+            <div className="action-buttons">
+                <Button onClick={handleFavorite} $isFavorite={isFavorite}>
+                {isFavorite ? (
+                    <><BsBookmarkCheckFill /> {language === 'pt-BR' ? "Salvo" : "Saved"}</>
+                ) : (
+                    <><BsBookmarkPlus /> {language === 'pt-BR' ? "Salvar" : "Save"}</>
+                )}
+                </Button>
+                <ShareButton onClick={handleShare}>
+                    <BsShareFill />
+                </ShareButton>
+            </div>
           </div>
 
           <div className="info-grid">
@@ -175,11 +280,28 @@ const Movie = () => {
               <h3><BsFillFileEarmarkTextFill /> {language === 'pt-BR' ? "Sinopse:" : "Overview:"}</h3>
               <p>{movie.overview}</p>
             </div>
+            
+            {/* SAGA / COLEÇÃO */}
+            {movie.belongs_to_collection && (
+                <CollectionBanner background={backdropUrl + movie.belongs_to_collection.backdrop_path}>
+                    <div className="collection-info">
+                        <h3><BsCollectionPlay /> {language === 'pt-BR' ? "Parte da Coleção" : "Part of the Collection"}</h3>
+                        <h2>{movie.belongs_to_collection.name}</h2>
+                    </div>
+                    <div className="collection-actions">
+                        <button className="col-btn view" onClick={openCollectionModal}>
+                            <BsEye /> {language === 'pt-BR' ? "Ver Coleção" : "View All"}
+                        </button>
+                        <button className="col-btn add" onClick={addCollectionToFavorites}>
+                            <BsListCheck /> {language === 'pt-BR' ? "Add Todos" : "Add All"}
+                        </button>
+                    </div>
+                </CollectionBanner>
+            )}
 
-            {/* ONDE ASSISTIR */}
             {providers && providers.flatrate && (
                 <div className="providers-section">
-                    <h3><BsTv /> {language === 'pt-BR' ? "Onde Assistir (Streaming):" : "Where to Watch:"}</h3>
+                    <h3><BsTv /> {language === 'pt-BR' ? "Onde Assistir:" : "Where to Watch:"}</h3>
                     <div className="providers-list">
                         {providers.flatrate.map((prov) => (
                             <img 
@@ -215,7 +337,7 @@ const Movie = () => {
 
             {trailerKey && (
               <div className="trailer-container">
-                <button className="trailer-btn" onClick={() => setShowModal(true)}>
+                <button className="trailer-btn" onClick={() => setShowTrailerModal(true)}>
                     <BsPlayBtn /> {language === 'pt-BR' ? "Assistir Trailer" : "Watch Trailer"}
                 </button>
               </div>
@@ -280,6 +402,12 @@ const Container = styled.div`
     width: 100%; 
   }
 
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
   .tagline {
     font-size: 1.5rem;
     margin-bottom: 2rem;
@@ -316,7 +444,6 @@ const Container = styled.div`
     text-align: justify;
   }
 
-  /* Providers Section */
   .providers-section h3 {
     color: var(--primary);
     margin-bottom: 1rem;
@@ -395,7 +522,6 @@ const Container = styled.div`
     background-color: var(--secondary);
   }
 
-  /* REVIEWS CSS */
   .reviews-section { margin-top: 2rem; }
   .reviews-section h3 { color: var(--primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
   
@@ -461,7 +587,7 @@ const Container = styled.div`
 `;
 
 const Button = styled.button`
-  width: 100%;
+  flex: 1;
   padding: 1rem;
   font-size: 1.1rem;
   font-weight: bold;
@@ -482,6 +608,99 @@ const Button = styled.button`
 
   &:hover {
     opacity: 0.8;
+  }
+`;
+
+const ShareButton = styled.button`
+  width: 60px;
+  background-color: var(--surface);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: 0.3s;
+
+  &:hover {
+    background-color: var(--primary);
+    color: white;
+  }
+`;
+
+const CollectionBanner = styled.div`
+  width: 100%;
+  height: 150px;
+  background-image: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.4)), url(${props => props.background});
+  background-size: cover;
+  background-position: center;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  border: 1px solid var(--primary);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+
+  .collection-info h3 {
+    color: var(--primary);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .collection-info h2 {
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .collection-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+  }
+
+  .col-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: 0.3s;
+      width: 140px;
+      justify-content: center;
+  }
+
+  .col-btn.view {
+      background-color: transparent;
+      border: 1px solid white;
+      color: white;
+  }
+  .col-btn.view:hover { background-color: white; color: black; }
+
+  .col-btn.add {
+      background-color: var(--primary);
+      color: white;
+  }
+  .col-btn.add:hover { background-color: var(--secondary); }
+
+  @media(max-width: 600px) {
+      flex-direction: column;
+      height: auto;
+      padding: 1.5rem;
+      gap: 1rem;
+      text-align: center;
+      
+      .collection-info h3 { justify-content: center; }
+      .collection-actions { flex-direction: row; }
   }
 `;
 
