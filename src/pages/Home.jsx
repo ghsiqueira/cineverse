@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { BiFilterAlt, BiX, BiInfoCircle, BiPlay, BiSortAlt2 } from "react-icons/bi";
 import MovieCard from "../components/MovieCard";
 import { Skeleton } from "../components/Skeleton";
+import VideoModal from "../components/VideoModal"; 
 import styled from "styled-components";
 import api from "../services/api";
+import { LanguageContext } from '../context/LanguageContext';
 
 const imageUrl = import.meta.env.VITE_IMG || "https://image.tmdb.org/t/p/w500/";
 const backdropUrl = "https://image.tmdb.org/t/p/original/";
@@ -12,15 +14,17 @@ const backdropUrl = "https://image.tmdb.org/t/p/original/";
 const Home = () => {
   const [movies, setMovies] = useState([]);
   const [heroMovie, setHeroMovie] = useState(null);
+  const [heroTrailer, setHeroTrailer] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   
   const [genres, setGenres] = useState([]);
   const [selectedGenre, setSelectedGenre] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  
   const [sortBy, setSortBy] = useState("vote_average.desc");
 
+  const { language } = useContext(LanguageContext);
   const observerTarget = useRef(null);
 
   useEffect(() => {
@@ -31,7 +35,17 @@ const Home = () => {
       } catch (error) { console.error(error); }
     };
     loadGenres();
-  }, []);
+  }, [language]);
+
+  const fetchHeroExtras = async (movieId) => {
+    try {
+        const videosRes = await api.get(`movie/${movieId}/videos`);
+        const trailer = videosRes.data.results.find(
+            (vid) => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
+        );
+        setHeroTrailer(trailer ? trailer.key : null);
+    } catch (e) { console.error(e); }
+  };
 
   const fetchMovies = async (pageNumber, genreId = null, sort = "vote_average.desc") => {
     setLoading(true);
@@ -56,6 +70,7 @@ const Home = () => {
         if (!heroMovie && results.length > 0) {
             const random = results[Math.floor(Math.random() * results.length)];
             setHeroMovie(random);
+            fetchHeroExtras(random.id);
         }
       } else {
         setMovies((prev) => {
@@ -68,8 +83,10 @@ const Home = () => {
   };
 
   useEffect(() => {
+    setMovies([]); 
+    setHeroMovie(null); 
     fetchMovies(1, selectedGenre, sortBy);
-  }, [sortBy, selectedGenre]); 
+  }, [sortBy, selectedGenre, language]); 
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -94,7 +111,7 @@ const Home = () => {
         observer.unobserve(observerTarget.current);
       }
     };
-  }, [loading, selectedGenre, sortBy]); 
+  }, [loading, selectedGenre, sortBy, language]); 
 
   const handleGenreClick = (genreId) => {
     if (selectedGenre === genreId) {
@@ -113,17 +130,23 @@ const Home = () => {
 
   return (
     <Container>
+      {showModal && heroTrailer && (
+        <VideoModal trailerKey={heroTrailer} onClose={() => setShowModal(false)} />
+      )}
+
       {heroMovie && (
         <HeroSection background={backdropUrl + heroMovie.backdrop_path}>
           <div className="hero-content">
             <h1>{heroMovie.title}</h1>
             <p className="overview">{heroMovie.overview}</p>
+            
             <div className="buttons">
-              <Link to={`/movie/${heroMovie.id}`} className="btn-primary">
-                <BiPlay /> Watch Now
-              </Link>
-              <Link to={`/movie/${heroMovie.id}`} className="btn-secondary">
-                <BiInfoCircle /> More Info
+              <button onClick={() => setShowModal(true)} className="btn-secondary">
+                <BiPlay /> {language === 'pt-BR' ? 'Trailer' : 'Trailer'}
+              </button>
+
+              <Link to={`/movie/${heroMovie.id}`} className="btn-outline">
+                <BiInfoCircle /> {language === 'pt-BR' ? 'Mais Detalhes' : 'More Info'}
               </Link>
             </div>
           </div>
@@ -137,7 +160,7 @@ const Home = () => {
             <h2 className="section-title">
                 {selectedGenre 
                 ? genres.find(g => g.id === selectedGenre)?.name 
-                : "Explore Movies"}
+                : (language === 'pt-BR' ? "Explorar Filmes" : "Explore Movies")}
             </h2>
           </div>
 
@@ -145,9 +168,9 @@ const Home = () => {
             <div className="sort-container">
                 <BiSortAlt2 className="sort-icon"/>
                 <select value={sortBy} onChange={handleSortChange}>
-                    <option value="popularity.desc">Most Popular</option>
-                    <option value="vote_average.desc">Top Rated</option>
-                    <option value="primary_release_date.desc">Newest</option>
+                    <option value="popularity.desc">{language === 'pt-BR' ? "Mais Populares" : "Most Popular"}</option>
+                    <option value="vote_average.desc">{language === 'pt-BR' ? "Melhores Avaliados" : "Top Rated"}</option>
+                    <option value="primary_release_date.desc">{language === 'pt-BR' ? "Lançamentos" : "Newest"}</option>
                 </select>
             </div>
 
@@ -155,7 +178,7 @@ const Home = () => {
                 className="filter-btn" 
                 onClick={() => setShowFilters(!showFilters)}
             >
-                {showFilters ? <BiX /> : <BiFilterAlt />} Filter
+                {showFilters ? <BiX /> : <BiFilterAlt />} {language === 'pt-BR' ? "Filtrar" : "Filter"}
             </button>
           </div>
         </div>
@@ -200,7 +223,7 @@ const Container = styled.div`
 `;
 
 const HeroSection = styled.div`
-  height: 80vh;
+  height: 85vh;
   width: 100%;
   background-image: url(${props => props.background});
   background-size: cover;
@@ -237,30 +260,35 @@ const HeroSection = styled.div`
   .buttons {
     display: flex;
     gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  a {
+  button, a {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.8rem 2rem;
-    border-radius: 4px;
+    border-radius: 50px;
     font-weight: bold;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     transition: 0.3s;
-  }
-
-  .btn-primary {
-    background-color: var(--primary);
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
     color: white;
   }
-  .btn-primary:hover { background-color: var(--secondary); }
 
   .btn-secondary {
-    background-color: rgba(100, 100, 100, 0.7);
-    color: white;
+    background-color: white;
+    color: black;
   }
-  .btn-secondary:hover { background-color: rgba(100, 100, 100, 0.9); }
+  .btn-secondary:hover { transform: scale(1.05); }
+
+  .btn-outline {
+    background-color: rgba(0, 0, 0, 0.6);
+    border: 1px solid white;
+  }
+  .btn-outline:hover { background-color: white; color: black; }
 
   .hero-fade {
     position: absolute;
@@ -278,9 +306,11 @@ const HeroSection = styled.div`
   }
 
   @media(max-width: 768px) {
-    height: 60vh;
+    height: 70vh;
     h1 { font-size: 2.5rem; }
     .overview { font-size: 1rem; }
+    .buttons { gap: 0.5rem; }
+    button, a { padding: 0.6rem 1rem; font-size: 0.9rem; }
   }
 `;
 

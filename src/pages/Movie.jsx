@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   BsGraphUp,
@@ -8,20 +8,22 @@ import {
   BsBookmarkPlus,
   BsBookmarkCheckFill,
   BsPlayBtn,
-  BsFillChatQuoteFill
+  BsFillChatQuoteFill,
+  BsTv
 } from "react-icons/bs";
 import MovieCard from "../components/MovieCard";
+import VideoModal from "../components/VideoModal";
 import styled from "styled-components";
 import api from "../services/api";
+import { LanguageContext } from '../context/LanguageContext';
 
 const profileUrl = "https://image.tmdb.org/t/p/w185/";
+const logoUrl = "https://image.tmdb.org/t/p/original/";
 
-const ReviewItem = ({ review }) => {
+const ReviewItem = ({ review, language }) => {
   const [expanded, setExpanded] = useState(false);
   const maxChars = 300;
-  
   const isLong = review.content.length > maxChars;
-  
   const contentToShow = expanded || !isLong 
     ? review.content 
     : review.content.substring(0, maxChars) + "...";
@@ -35,7 +37,7 @@ const ReviewItem = ({ review }) => {
                         ? review.author_details.avatar_path.substring(1) 
                         : profileUrl + review.author_details.avatar_path} 
                     alt={review.author}
-                    onError={(e) => {e.target.style.display='none'}}
+                    onError={(e) => {e.target.style.display='none'}} 
                  />
             ) : (
                 <div className="avatar-placeholder">{review.author.charAt(0)}</div>
@@ -45,7 +47,7 @@ const ReviewItem = ({ review }) => {
         <p className="review-content">{contentToShow}</p>
         {isLong && (
             <button className="read-more-btn" onClick={() => setExpanded(!expanded)}>
-                {expanded ? "Read Less" : "Read More"}
+                {expanded ? (language === 'pt-BR' ? "Ler menos" : "Read Less") : (language === 'pt-BR' ? "Ler mais" : "Read More")}
             </button>
         )}
     </div>
@@ -59,7 +61,11 @@ const Movie = () => {
   const [cast, setCast] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [providers, setProviders] = useState(null); 
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  
+  const { language } = useContext(LanguageContext);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -87,13 +93,19 @@ const Movie = () => {
         const reviewsRes = await api.get(`movie/${id}/reviews`);
         setReviews(reviewsRes.data.results);
 
+        // Streaming Data
+        const providerRes = await api.get(`movie/${id}/watch/providers`);
+        if (providerRes.data.results && providerRes.data.results.BR) {
+            setProviders(providerRes.data.results.BR);
+        }
+
       } catch (error) {
         console.error(error);
       }
     };
 
     getMovieData();
-  }, [id]);
+  }, [id, language]);
 
   const checkFavorite = (movieId) => {
     const savedMovies = JSON.parse(localStorage.getItem("cineverse_favorites")) || [];
@@ -124,15 +136,19 @@ const Movie = () => {
 
   return (
     <Container>
+      {showModal && trailerKey && (
+        <VideoModal trailerKey={trailerKey} onClose={() => setShowModal(false)} />
+      )}
+
       {movie && (
         <>
           <div className="card-column">
             <MovieCard movie={movie} showLink={false} />
             <Button onClick={handleFavorite} $isFavorite={isFavorite}>
               {isFavorite ? (
-                <><BsBookmarkCheckFill /> Saved</>
+                <><BsBookmarkCheckFill /> {language === 'pt-BR' ? "Salvo" : "Saved"}</>
               ) : (
-                <><BsBookmarkPlus /> Add to Favorites</>
+                <><BsBookmarkPlus /> {language === 'pt-BR' ? "Salvar Favorito" : "Add to Favorites"}</>
               )}
             </Button>
           </div>
@@ -142,27 +158,44 @@ const Movie = () => {
 
             <div className="stats-row">
               <div className="info">
-                <h3><BsWallet2 /> Budget:</h3>
+                <h3><BsWallet2 /> {language === 'pt-BR' ? "Orçamento:" : "Budget:"}</h3>
                 <p>{formatCurrency(movie.budget)}</p>
               </div>
               <div className="info">
-                <h3><BsGraphUp /> Revenue:</h3>
+                <h3><BsGraphUp /> {language === 'pt-BR' ? "Receita:" : "Revenue:"}</h3>
                 <p>{formatCurrency(movie.revenue)}</p>
               </div>
               <div className="info">
-                <h3><BsHourglassSplit /> Runtime:</h3>
+                <h3><BsHourglassSplit /> {language === 'pt-BR' ? "Duração:" : "Runtime:"}</h3>
                 <p>{movie.runtime} min</p>
               </div>
             </div>
 
             <div className="info description">
-              <h3><BsFillFileEarmarkTextFill /> Overview:</h3>
+              <h3><BsFillFileEarmarkTextFill /> {language === 'pt-BR' ? "Sinopse:" : "Overview:"}</h3>
               <p>{movie.overview}</p>
             </div>
 
+            {/* ONDE ASSISTIR */}
+            {providers && providers.flatrate && (
+                <div className="providers-section">
+                    <h3><BsTv /> {language === 'pt-BR' ? "Onde Assistir (Streaming):" : "Where to Watch:"}</h3>
+                    <div className="providers-list">
+                        {providers.flatrate.map((prov) => (
+                            <img 
+                                key={prov.provider_id} 
+                                src={logoUrl + prov.logo_path} 
+                                alt={prov.provider_name}
+                                title={prov.provider_name}
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {cast.length > 0 && (
               <div className="cast-section">
-                <h3>Top Cast</h3>
+                <h3>{language === 'pt-BR' ? "Elenco Principal" : "Top Cast"}</h3>
                 <div className="cast-list">
                   {cast.map((actor) => (
                     <Link key={actor.id} to={`/actor/${actor.id}`} style={{textDecoration: 'none', color: 'inherit'}}>
@@ -182,24 +215,18 @@ const Movie = () => {
 
             {trailerKey && (
               <div className="trailer-container">
-                <h3><BsPlayBtn /> Watch Trailer</h3>
-                <div className="video-responsive">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${trailerKey}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allowFullScreen
-                  ></iframe>
-                </div>
+                <button className="trailer-btn" onClick={() => setShowModal(true)}>
+                    <BsPlayBtn /> {language === 'pt-BR' ? "Assistir Trailer" : "Watch Trailer"}
+                </button>
               </div>
             )}
             
             {reviews.length > 0 && (
                 <div className="reviews-section">
-                    <h3><BsFillChatQuoteFill /> User Reviews</h3>
+                    <h3><BsFillChatQuoteFill /> {language === 'pt-BR' ? "Comentários" : "Reviews"}</h3>
                     <div className="reviews-list">
-                        {reviews.slice(0, 3).map((review) => ( 
-                            <ReviewItem key={review.id} review={review} />
+                        {reviews.slice(0, 3).map((review) => (
+                            <ReviewItem key={review.id} review={review} language={language} />
                         ))}
                     </div>
                 </div>
@@ -207,7 +234,7 @@ const Movie = () => {
 
             {recommendations.length > 0 && (
               <div className="recommendations-section">
-                <h3>You Might Also Like</h3>
+                <h3>{language === 'pt-BR' ? "Você também pode gostar" : "You Might Also Like"}</h3>
                 <div className="recommendations-grid">
                   {recommendations.map((movie) => (
                     <MovieCard key={movie.id} movie={movie} />
@@ -289,6 +316,26 @@ const Container = styled.div`
     text-align: justify;
   }
 
+  /* Providers Section */
+  .providers-section h3 {
+    color: var(--primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .providers-list {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .providers-list img {
+    width: 50px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  }
+
   .cast-section h3 {
     color: var(--primary);
     margin-bottom: 1rem;
@@ -327,27 +374,28 @@ const Container = styled.div`
     font-size: 0.8rem;
   }
 
-  .trailer-container { margin-top: 2rem; }
-  .trailer-container h3 {
-    color: var(--primary);
+  .trailer-container { margin-top: 1rem; }
+  
+  .trailer-btn {
+    background-color: var(--primary);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  .video-responsive {
-    overflow: hidden;
-    padding-bottom: 56.25%;
-    position: relative;
-    height: 0;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    background-color: #000;
-  }
-  .video-responsive iframe {
-    left: 0; top: 0; height: 100%; width: 100%; position: absolute;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
   }
 
+  .trailer-btn:hover {
+    background-color: var(--secondary);
+  }
+
+  /* REVIEWS CSS */
   .reviews-section { margin-top: 2rem; }
   .reviews-section h3 { color: var(--primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
   

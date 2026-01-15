@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX } from 'react-icons/bi';
+import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX, BiWorld } from 'react-icons/bi';
 import styled from 'styled-components';
 import api from '../services/api';
+import { LanguageContext } from '../context/LanguageContext';
 
 const imageUrl = import.meta.env.VITE_IMG || "https://image.tmdb.org/t/p/w500/";
 
@@ -10,8 +11,10 @@ const Navbar = () => {
   const [search, setSearch] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // Novo estado para o Menu Mobile
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  
+  const { language, changeLanguage } = useContext(LanguageContext);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -37,7 +40,7 @@ const Navbar = () => {
     navigate(`/search?q=${search}`);
     setSearch("");
     setShowSuggestions(false);
-    setIsMenuOpen(false); // Fecha o menu ao buscar
+    setIsMenuOpen(false); 
   };
 
   const handleSuggestionClick = (id) => {
@@ -55,22 +58,32 @@ const Navbar = () => {
             <BiCameraMovie /> CineVerse
             </Link>
         </h2>
-        {/* Botão do Menu Mobile */}
         <button className="mobile-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <BiX /> : <BiMenu />}
         </button>
       </div>
 
       <div className={`nav-content ${isMenuOpen ? "open" : ""}`}>
+        <div className="lang-selector">
+            <BiWorld />
+            <select 
+                value={language} 
+                onChange={(e) => changeLanguage(e.target.value)}
+            >
+                <option value="en-US">EN</option>
+                <option value="pt-BR">PT</option>
+            </select>
+        </div>
+
         <Link to="/favorites" className="fav-link" onClick={() => setIsMenuOpen(false)}>
-            Favorites
+            {language === 'pt-BR' ? 'Favoritos' : 'Favorites'}
         </Link>
         
         <div className="search-container">
             <form onSubmit={handleSubmit}>
             <input 
                 type="text" 
-                placeholder="Search for a movie..." 
+                placeholder={language === 'pt-BR' ? "Buscar filme..." : "Search for a movie..."}
                 onChange={(e) => setSearch(e.target.value)}
                 value={search}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
@@ -151,6 +164,23 @@ const Nav = styled.nav`
     gap: 2rem;
     flex: 1;
     justify-content: flex-end;
+  }
+
+  .lang-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-white);
+  }
+
+  .lang-selector select {
+    background: var(--background);
+    color: var(--text-white);
+    border: 1px solid var(--text-gray);
+    border-radius: 4px;
+    padding: 0.2rem;
+    cursor: pointer;
+    outline: none;
   }
 
   .fav-link {
@@ -262,7 +292,6 @@ const Nav = styled.nav`
     color: var(--text-gray);
   }
 
-  /* MEDIA QUERIES PARA MOBILE */
   @media(max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -286,7 +315,6 @@ const Nav = styled.nav`
       gap: 1.5rem;
     }
 
-    /* Classe ativada pelo JS */
     .nav-content.open {
       display: flex;
       animation: slideDown 0.3s ease;
