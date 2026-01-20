@@ -33,8 +33,21 @@ const backdropUrl = "https://image.tmdb.org/t/p/original/";
 const ReviewItem = ({ review, language }) => {
   const [expanded, setExpanded] = useState(false);
   const maxChars = 300;
+  
+  const formatContent = (text) => {
+    if (!text) return "";
+    
+    let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    formatted = formatted.replace(/_(.*?)_/g, '<em>$1</em>');
+    
+    formatted = formatted.replace(/\n/g, '<br />');
+    
+    return formatted;
+  };
+
   const isLong = review.content.length > maxChars;
-  const contentToShow = expanded || !isLong 
+  const rawContent = expanded || !isLong 
     ? review.content 
     : review.content.substring(0, maxChars) + "...";
 
@@ -54,7 +67,12 @@ const ReviewItem = ({ review, language }) => {
             )}
             <h4>{review.author}</h4>
         </div>
-        <p className="review-content">{contentToShow}</p>
+        
+        <p 
+            className="review-content" 
+            dangerouslySetInnerHTML={{ __html: formatContent(rawContent) }}
+        />
+
         {isLong && (
             <button className="read-more-btn" onClick={() => setExpanded(!expanded)}>
                 {expanded ? (language === 'pt-BR' ? "Ler menos" : "Read Less") : (language === 'pt-BR' ? "Ler mais" : "Read More")}
@@ -638,6 +656,9 @@ const Container = styled.div`
     font-style: italic;
     color: #ccc;
     line-height: 1.5;
+    
+    strong { color: white; font-weight: bold; }
+    em { color: var(--secondary); }
   }
 
   .read-more-btn {
