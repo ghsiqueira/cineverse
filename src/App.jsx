@@ -13,7 +13,8 @@ import Series from './pages/Series';
 import Season from './pages/Season';
 import AIRecommendations from './pages/AIRecommendations';
 import Profile from './pages/Profile';
-import Calendar from './pages/Calendar'; 
+import Calendar from './pages/Calendar';
+import Quiz from './pages/Quiz'; 
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -32,6 +33,7 @@ const AnimatedRoutes = () => {
         <Route path="/ai-recommendations" element={<AIRecommendations />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/quiz" element={<Quiz />} /> 
         
         <Route path="*" element={<NotFound />} />
       </Routes>

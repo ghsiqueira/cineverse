@@ -9,7 +9,10 @@ import {
     BiDice5, 
     BiBot,
     BiUserCircle,
-    BiCalendar
+    BiCalendar,
+    BiJoystick,
+    BiHeart,      
+    BiBookmark    
 } from 'react-icons/bi';
 import styled from 'styled-components';
 import api from '../services/api';
@@ -119,17 +122,30 @@ const Navbar = () => {
             <Link to="/ai-recommendations" className="nav-link ai-link" onClick={() => setIsMenuOpen(false)}>
                 <BiBot /> {language === 'pt-BR' ? 'IA' : 'AI'}
             </Link>
+            
+            <Link to="/quiz" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                <BiJoystick size={20} />
+                <span>Quiz</span>
+            </Link>
+
             <Link to="/favorites" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                {language === 'pt-BR' ? 'Favoritos' : 'Favorites'}
+                <BiHeart size={20} />
+                <span>{language === 'pt-BR' ? 'Favoritos' : 'Favorites'}</span>
             </Link>
+            
             <Link to="/watchlist" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                {language === 'pt-BR' ? 'Quero Ver' : 'Watchlist'}
+                <BiBookmark size={20} />
+                <span>{language === 'pt-BR' ? 'Quero Ver' : 'Watchlist'}</span>
             </Link>
+            
             <Link to="/calendar" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                <BiCalendar size={24} /> 
+                <BiCalendar size={20} />
+                <span>{language === 'pt-BR' ? 'Agenda' : 'Calendar'}</span>
             </Link>
+            
             <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-                <BiUserCircle size={24} />
+                <BiUserCircle size={20} />
+                <span>{language === 'pt-BR' ? 'Perfil' : 'Profile'}</span>
             </Link>
         </div>
         
@@ -264,6 +280,7 @@ const Nav = styled.nav`
   .links-group {
       display: flex;
       gap: 1.5rem;
+      align-items: center;
   }
 
   .nav-link {
@@ -273,6 +290,7 @@ const Nav = styled.nav`
     display: flex;
     align-items: center;
     gap: 0.3rem;
+    text-decoration: none;
   }
   
   .nav-link:hover {
@@ -390,6 +408,12 @@ const Nav = styled.nav`
     color: var(--text-gray);
   }
 
+  @media(max-width: 1024px) {
+    .links-group {
+        display: none; 
+    }
+  }
+
   @media(max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -416,6 +440,11 @@ const Nav = styled.nav`
     .nav-content.open {
       display: flex;
       animation: slideDown 0.3s ease;
+    }
+    
+    .nav-content.open .links-group {
+        display: flex;
+        flex-direction: column;
     }
 
     .links-group { flex-direction: column; align-items: center; gap: 1rem; }
