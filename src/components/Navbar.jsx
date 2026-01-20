@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX, BiWorld, BiDice5 } from 'react-icons/bi';
+import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX, BiWorld, BiDice5, BiBot } from 'react-icons/bi';
 import styled from 'styled-components';
 import api from '../services/api';
 import { LanguageContext } from '../context/LanguageContext';
@@ -58,14 +58,23 @@ const Navbar = () => {
 
   const handleSurpriseMe = async () => {
       try {
+          const mediaTypes = ['movie', 'tv'];
+          const randomMediaType = mediaTypes[Math.floor(Math.random() * mediaTypes.length)];
           const randomPage = Math.floor(Math.random() * 10) + 1;
-          const response = await api.get("movie/top_rated", {
+          
+          let endpoint = "movie/top_rated";
+          if (randomMediaType === 'tv') {
+              endpoint = "tv/top_rated";
+          }
+          
+          const response = await api.get(endpoint, {
               params: { page: randomPage }
           });
-          const movies = response.data.results;
-          const randomMovie = movies[Math.floor(Math.random() * movies.length)];
           
-          navigate(`/movie/${randomMovie.id}`);
+          const results = response.data.results;
+          const randomItem = results[Math.floor(Math.random() * results.length)];
+          
+          navigate(`/${randomMediaType}/${randomItem.id}`);
           setIsMenuOpen(false);
       } catch (error) {
           console.error(error);
@@ -102,6 +111,9 @@ const Navbar = () => {
         </button>
 
         <div className="links-group">
+            <Link to="/ai-recommendations" className="nav-link ai-link" onClick={() => setIsMenuOpen(false)}>
+                <BiBot /> {language === 'pt-BR' ? 'IA' : 'AI'}
+            </Link>
             <Link to="/favorites" className="nav-link" onClick={() => setIsMenuOpen(false)}>
                 {language === 'pt-BR' ? 'Favoritos' : 'Favorites'}
             </Link>
@@ -247,10 +259,25 @@ const Nav = styled.nav`
     font-weight: bold;
     color: var(--text-white);
     transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
   }
   
   .nav-link:hover {
     color: var(--secondary);
+  }
+
+  .ai-link {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  }
+
+  .ai-link:hover {
+    color: white;
+    transform: scale(1.05);
   }
 
   .search-container {

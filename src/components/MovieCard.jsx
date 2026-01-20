@@ -28,14 +28,16 @@ const MovieCard = ({ movie, showLink = true }) => {
         />
       </div>
 
-      <h2>{title}</h2>
+      <Link to={linkPath} className="title-link">
+        <h2>{title}</h2>
+      </Link>
       
       <p>
         <FaStar /> {movie.vote_average ? movie.vote_average.toFixed(1) : "N/A"}
       </p>
       
       {showLink && (
-        <Link to={linkPath}>
+        <Link to={linkPath} className="details-link">
             {language === 'pt-BR' ? 'Detalhes' : 'Details'}
         </Link>
       )}
@@ -78,9 +80,25 @@ const Card = styled.div`
     to { opacity: 1; }
   }
 
+  .title-link {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.3s;
+
+    &:hover {
+      color: var(--primary);
+    }
+
+    &:hover h2 {
+      color: var(--primary);
+    }
+  }
+
   h2 {
     margin-bottom: 1rem;
     font-size: 1.2rem;
+    transition: color 0.3s;
+    cursor: pointer;
   }
 
   p {
@@ -92,7 +110,7 @@ const Card = styled.div`
     font-weight: bold;
   }
 
-  a {
+  .details-link {
     background-color: var(--primary);
     border: 2px solid var(--primary);
     border-radius: 4px;
@@ -102,11 +120,13 @@ const Card = styled.div`
     font-weight: bold;
     transition: 0.3s;
     margin-top: auto;
-  }
+    text-decoration: none;
+    display: block;
 
-  a:hover {
-    background-color: transparent;
-    color: var(--primary);
+    &:hover {
+      background-color: transparent;
+      color: var(--primary);
+    }
   }
 `;
 

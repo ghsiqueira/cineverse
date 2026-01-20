@@ -9,7 +9,9 @@ import Favorites from './pages/Favorites';
 import Watchlist from './pages/Watchlist';
 import Actor from './pages/Actor';
 import NotFound from './pages/NotFound';
-import Series from './pages/Series'; 
+import Series from './pages/Series';
+import Season from './pages/Season';
+import AIRecommendations from './pages/AIRecommendations';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -19,11 +21,13 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/movie/:id" element={<Movie />} />
-        <Route path="/tv/:id" element={<Series />} /> 
+        <Route path="/tv/:id" element={<Series />} />
+        <Route path="/tv/:seriesId/season/:seasonNumber" element={<Season />} />
         <Route path="/search" element={<Search />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/actor/:id" element={<Actor />} />
+        <Route path="/ai-recommendations" element={<AIRecommendations />} />
         
         <Route path="*" element={<NotFound />} />
       </Routes>

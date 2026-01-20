@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { BiFilterAlt, BiX, BiInfoCircle, BiPlay, BiSortAlt2, BiCalendar, BiStar, BiMoviePlay, BiTv } from "react-icons/bi";
+import { FaDragon } from "react-icons/fa";
 import MovieCard from "../components/MovieCard";
 import { Skeleton } from "../components/Skeleton";
 import VideoModal from "../components/VideoModal"; 
@@ -36,16 +37,17 @@ const Home = () => {
   useEffect(() => {
     const loadGenres = async () => {
       try {
-        const response = await api.get(`genre/${mediaType}/list`);
+        const currentType = mediaType === 'anime' ? 'tv' : mediaType;
+        const response = await api.get(`genre/${currentType}/list`);
         setGenres(response.data.genres);
       } catch (error) { console.error(error); }
     };
     loadGenres();
   }, [language, mediaType]);
 
-  const fetchHeroExtras = async (id) => {
+  const fetchHeroExtras = async (id, type) => {
     try {
-        const videosRes = await api.get(`${mediaType}/${id}/videos`);
+        const videosRes = await api.get(`${type}/${id}/videos`);
         const trailer = videosRes.data.results.find(
             (vid) => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
         );
@@ -57,7 +59,6 @@ const Home = () => {
     setLoading(true);
 
     try {
-      let endpoint = `discover/${mediaType}`;
       let params = { 
         page: pageNumber, 
         sort_by: sort,
@@ -74,6 +75,17 @@ const Home = () => {
         params.with_genres = genreId;
       }
 
+      let endpoint = `discover/${mediaType === 'anime' ? 'tv' : mediaType}`;
+      
+      if (mediaType === 'anime') {
+        params.with_keywords = '210024';
+        params.with_origin_country = 'JP';
+      }
+      
+      if (mediaType === 'tv') {
+        params.without_keywords = '210024'; 
+      }
+
       const response = await api.get(endpoint, { params });
       const results = response.data.results;
 
@@ -82,7 +94,8 @@ const Home = () => {
         if (!heroMovie && results.length > 0) {
             const random = results[Math.floor(Math.random() * results.length)];
             setHeroMovie(random);
-            fetchHeroExtras(random.id);
+            const heroType = mediaType === 'anime' ? 'tv' : mediaType;
+            fetchHeroExtras(random.id, heroType);
         }
       } else {
         setMovies((prev) => {
@@ -145,6 +158,12 @@ const Home = () => {
       setMinRating(displayRating);
   };
 
+  const getTitle = () => {
+    if (mediaType === 'movie') return language === 'pt-BR' ? 'Filmes' : 'Movies';
+    if (mediaType === 'tv') return language === 'pt-BR' ? 'Séries' : 'TV Series';
+    if (mediaType === 'anime') return 'Animes';
+  };
+
   return (
     <Container
         as={motion.div}
@@ -168,7 +187,7 @@ const Home = () => {
                 <BiPlay /> {language === 'pt-BR' ? 'Trailer' : 'Trailer'}
               </button>
 
-              <Link to={`/${mediaType}/${heroMovie.id}`} className="btn-outline">
+              <Link to={`/${mediaType === 'anime' ? 'tv' : mediaType}/${heroMovie.id}`} className="btn-outline">
                 <BiInfoCircle /> {language === 'pt-BR' ? 'Mais Detalhes' : 'More Info'}
               </Link>
             </div>
@@ -192,6 +211,12 @@ const Home = () => {
                 >
                     <BiTv /> {language === 'pt-BR' ? 'Séries' : 'TV Series'}
                 </button>
+                <button 
+                    className={mediaType === 'anime' ? 'active' : ''} 
+                    onClick={() => handleMediaTypeChange('anime')}
+                >
+                    <FaDragon /> Animes
+                </button>
             </div>
         </div>
 
@@ -200,7 +225,7 @@ const Home = () => {
             <h2 className="section-title">
                 {selectedGenre 
                 ? genres.find(g => g.id === selectedGenre)?.name 
-                : (language === 'pt-BR' ? "Explorar" : "Explore")}
+                : getTitle()}
             </h2>
           </div>
 
@@ -250,76 +275,77 @@ const Home = () => {
                 </div>
              </div>
 
-             <div className="genres-list">
-                {genres.map((genre) => (
-                <button 
-                    key={genre.id} 
-                    onClick={() => handleGenreClick(genre.id)}
-                    className={selectedGenre === genre.id ? "active" : ""}
+            <div className="genres-list">
+              {genres.map((genre) => (
+                <button
+                  key={genre.id}
+                  onClick={() => handleGenreClick(genre.id)}
+                  className={selectedGenre === genre.id ? "active" : ""}
                 >
-                    {genre.name}
+                  {genre.name}
                 </button>
-                ))}
+              ))}
             </div>
           </div>
         )}
 
         <div className="movies-container">
-          {movies.map((movie) => (
-            <MovieCard key={movie.id} movie={movie} />
-          ))}
-
-          {loading && Array(4).fill(0).map((_, index) => (
-             <div key={index} style={{ height: '450px', background: 'var(--surface)', borderRadius: '1rem', padding: '1rem' }}>
-                <Skeleton height="300px" mb="1rem" />
-                <Skeleton height="30px" mb="1rem" />
-                <Skeleton height="20px" width="50%" />
-             </div>
-          ))}
+          {loading && page === 1
+            ? Array(12)
+                .fill(0)
+                .map((_, i) => <Skeleton key={i} height="420px" />)
+            : movies.map((movie) => <MovieCard key={movie.id} movie={movie} />)}
         </div>
 
-        <div ref={observerTarget} style={{ height: '20px', margin: '1rem 0' }}></div>
+        <div ref={observerTarget} style={{ height: "20px" }}></div>
+        
+        {loading && page > 1 && (
+          <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-gray)" }}>
+            {language === 'pt-BR' ? 'Carregando mais...' : 'Loading more...'}
+          </div>
+        )}
       </MainContent>
     </Container>
   );
 };
 
 const Container = styled.div`
-  display: flex;
-  flex-direction: column;
+  color: var(--text-white);
+  position: relative;
 `;
 
 const HeroSection = styled.div`
-  height: 85vh;
+  height: 80vh;
   width: 100%;
-  background-image: url(${props => props.background});
+  background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), var(--background)), url(${props => props.background});
   background-size: cover;
-  background-position: center top;
+  background-position: center;
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding-left: 5%;
+  align-items: flex-end;
+  padding: 0 2rem 3rem;
+  margin-bottom: 2rem;
 
   .hero-content {
     z-index: 2;
-    max-width: 600px;
-    animation: slideUp 1s ease;
+    max-width: 700px;
+    animation: slideUp 0.8s ease;
   }
 
   h1 {
     font-size: 4rem;
-    font-weight: 800;
+    font-weight: 900;
     margin-bottom: 1rem;
-    text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
   }
 
   .overview {
     font-size: 1.2rem;
+    line-height: 1.6;
     margin-bottom: 2rem;
     text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -327,7 +353,6 @@ const HeroSection = styled.div`
   .buttons {
     display: flex;
     gap: 1rem;
-    flex-wrap: wrap;
   }
 
   button, a {
