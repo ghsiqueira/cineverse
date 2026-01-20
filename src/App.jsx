@@ -13,6 +13,7 @@ import Series from './pages/Series';
 import Season from './pages/Season';
 import AIRecommendations from './pages/AIRecommendations';
 import Profile from './pages/Profile';
+import Calendar from './pages/Calendar'; 
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -30,6 +31,7 @@ const AnimatedRoutes = () => {
         <Route path="/actor/:id" element={<Actor />} />
         <Route path="/ai-recommendations" element={<AIRecommendations />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/calendar" element={<Calendar />} />
         
         <Route path="*" element={<NotFound />} />
       </Routes>

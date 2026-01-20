@@ -8,7 +8,9 @@ import {
   BsPlayBtn,
   BsTv,
   BsShareFill,
-  BsCalendarCheck
+  BsCalendarCheck,
+  BsClockHistory,
+  BsCheckCircle
 } from "react-icons/bs";
 import MovieCard from "../components/MovieCard";
 import VideoModal from "../components/VideoModal";
@@ -29,7 +31,10 @@ const Series = () => {
   const [cast, setCast] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [providers, setProviders] = useState(null); 
+  
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isWatchlist, setIsWatchlist] = useState(false); 
+  
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -47,7 +52,7 @@ const Series = () => {
         const res = await api.get(`tv/${id}`);
         setSerie(res.data);
         setTotalEpisodes(res.data.number_of_episodes);
-        checkFavorite(res.data.id);
+        checkLists(res.data.id); 
         calculateProgress(res.data.id);
 
         const videoRes = await api.get(`tv/${id}/videos`);
@@ -93,10 +98,14 @@ const Series = () => {
       setWatchedCount(watched.length);
   };
 
-  const checkFavorite = (serieId) => {
-    const saved = JSON.parse(localStorage.getItem("cineverse_favorites")) || [];
-    const has = saved.find((item) => item.id === serieId);
-    setIsFavorite(!!has);
+  const checkLists = (serieId) => {
+    const savedFavs = JSON.parse(localStorage.getItem("cineverse_favorites")) || [];
+    const hasFav = savedFavs.find((item) => item.id === serieId);
+    setIsFavorite(!!hasFav);
+
+    const savedWatch = JSON.parse(localStorage.getItem("cineverse_watchlist")) || [];
+    const hasWatch = savedWatch.find((item) => item.id === serieId);
+    setIsWatchlist(!!hasWatch);
   };
 
   const handleFavorite = () => {
@@ -109,6 +118,19 @@ const Series = () => {
       saved.push(serie);
       localStorage.setItem("cineverse_favorites", JSON.stringify(saved));
       setIsFavorite(true);
+    }
+  };
+
+  const handleWatchlist = () => {
+    const saved = JSON.parse(localStorage.getItem("cineverse_watchlist")) || [];
+    if (isWatchlist) {
+      const newFiles = saved.filter((m) => m.id !== serie.id);
+      localStorage.setItem("cineverse_watchlist", JSON.stringify(newFiles));
+      setIsWatchlist(false);
+    } else {
+      saved.push(serie);
+      localStorage.setItem("cineverse_watchlist", JSON.stringify(saved));
+      setIsWatchlist(true);
     }
   };
 
@@ -151,10 +173,16 @@ const Series = () => {
           <div className="card-column">
             <MovieCard movie={serie} showLink={false} />
             <div className="action-buttons">
-                <Button onClick={handleFavorite} $active={isFavorite}>
+                <Button onClick={handleFavorite} $active={isFavorite} $type="fav">
                     {isFavorite ? <BsBookmarkCheckFill /> : <BsBookmarkPlus />}
                     <span>{isFavorite ? (language === 'pt-BR' ? "Salvo" : "Saved") : (language === 'pt-BR' ? "Favoritos" : "Favorites")}</span>
                 </Button>
+
+                <Button onClick={handleWatchlist} $active={isWatchlist} $type="watch">
+                    {isWatchlist ? <BsCheckCircle /> : <BsClockHistory />}
+                    <span>{isWatchlist ? (language === 'pt-BR' ? "Na Lista" : "On List") : (language === 'pt-BR' ? "Quero Ver" : "Watchlist")}</span>
+                </Button>
+
                 <ShareButton onClick={handleShare}>
                     <BsShareFill />
                 </ShareButton>
@@ -519,8 +547,9 @@ const Button = styled.button`
   cursor: pointer;
   transition: 0.3s;
   
-  background-color: ${props => props.$active ? '#ffffff' : 'var(--primary)'};
+  background-color: ${props => props.$active ? '#ffffff' : (props.$type === 'fav' ? 'var(--primary)' : 'var(--surface)')};
   color: ${props => props.$active ? '#000000' : '#ffffff'};
+  border: ${props => props.$type === 'watch' && !props.$active ? '1px solid white' : 'none'};
   
   svg {
     font-size: 1.2rem;

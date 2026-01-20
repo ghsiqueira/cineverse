@@ -8,7 +8,8 @@ import {
     BiWorld, 
     BiDice5, 
     BiBot,
-    BiUserCircle
+    BiUserCircle,
+    BiCalendar
 } from 'react-icons/bi';
 import styled from 'styled-components';
 import api from '../services/api';
@@ -123,6 +124,9 @@ const Navbar = () => {
             </Link>
             <Link to="/watchlist" className="nav-link" onClick={() => setIsMenuOpen(false)}>
                 {language === 'pt-BR' ? 'Quero Ver' : 'Watchlist'}
+            </Link>
+            <Link to="/calendar" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                <BiCalendar size={24} /> 
             </Link>
             <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
                 <BiUserCircle size={24} />
