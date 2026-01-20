@@ -3,29 +3,30 @@ import { createContext, useState, useEffect } from "react";
 export const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState("en-US");
+  const [language, setLanguage] = useState(() => {
+    const storedLang = localStorage.getItem("cineverse_lang");
+    if (storedLang) return storedLang;
+
+    const browserLang = navigator.language || navigator.userLanguage;
+    if (browserLang && (browserLang.includes("pt") || browserLang.includes("BR"))) {
+      return "pt-BR";
+    }
+    
+    return "en-US";
+  });
 
   useEffect(() => {
-    const storedLang = localStorage.getItem("cineverse_lang");
-    
-    if (storedLang) {
-      setLanguage(storedLang);
+    if (language === "pt-BR") {
+      document.title = "CineVerse | Explorador de Filmes IA";
     } else {
-      const browserLang = navigator.language || navigator.userLanguage;
-      if (browserLang.includes("pt") || browserLang.includes("BR")) {
-        setLanguage("pt-BR");
-        localStorage.setItem("cineverse_lang", "pt-BR");
-      } else {
-        setLanguage("en-US");
-        localStorage.setItem("cineverse_lang", "en-US");
-      }
+      document.title = "CineVerse | AI Movie Explorer";
     }
-  }, []);
+    
+    localStorage.setItem("cineverse_lang", language);
+  }, [language]);
 
   const changeLanguage = (lang) => {
     setLanguage(lang);
-    localStorage.setItem("cineverse_lang", lang);
-    window.location.reload(); 
   };
 
   return (
