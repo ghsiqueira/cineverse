@@ -1,6 +1,15 @@
 import { useState, useEffect, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { BiCameraMovie, BiSearchAlt2, BiMenu, BiX, BiWorld, BiDice5, BiBot } from 'react-icons/bi';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { 
+    BiCameraMovie, 
+    BiSearchAlt2, 
+    BiMenu, 
+    BiX, 
+    BiWorld, 
+    BiDice5, 
+    BiBot,
+    BiUserCircle
+} from 'react-icons/bi';
 import styled from 'styled-components';
 import api from '../services/api';
 import { LanguageContext } from '../context/LanguageContext';
@@ -13,6 +22,7 @@ const Navbar = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   
   const { language, changeLanguage } = useContext(LanguageContext);
 
@@ -58,23 +68,17 @@ const Navbar = () => {
 
   const handleSurpriseMe = async () => {
       try {
-          const mediaTypes = ['movie', 'tv'];
-          const randomMediaType = mediaTypes[Math.floor(Math.random() * mediaTypes.length)];
+          const isOnSeriesMode = location.pathname.includes('/tv');
+          const type = isOnSeriesMode ? 'tv' : 'movie';
+          
           const randomPage = Math.floor(Math.random() * 10) + 1;
-          
-          let endpoint = "movie/top_rated";
-          if (randomMediaType === 'tv') {
-              endpoint = "tv/top_rated";
-          }
-          
-          const response = await api.get(endpoint, {
+          const response = await api.get(`${type}/top_rated`, {
               params: { page: randomPage }
           });
+          const items = response.data.results;
+          const randomItem = items[Math.floor(Math.random() * items.length)];
           
-          const results = response.data.results;
-          const randomItem = results[Math.floor(Math.random() * results.length)];
-          
-          navigate(`/${randomMediaType}/${randomItem.id}`);
+          navigate(`/${type}/${randomItem.id}`);
           setIsMenuOpen(false);
       } catch (error) {
           console.error(error);
@@ -119,6 +123,9 @@ const Navbar = () => {
             </Link>
             <Link to="/watchlist" className="nav-link" onClick={() => setIsMenuOpen(false)}>
                 {language === 'pt-BR' ? 'Quero Ver' : 'Watchlist'}
+            </Link>
+            <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                <BiUserCircle size={24} />
             </Link>
         </div>
         

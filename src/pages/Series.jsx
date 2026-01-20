@@ -33,6 +33,9 @@ const Series = () => {
   const [showTrailerModal, setShowTrailerModal] = useState(false);
   const [loading, setLoading] = useState(true);
   
+  const [watchedCount, setWatchedCount] = useState(0);
+  const [totalEpisodes, setTotalEpisodes] = useState(0);
+
   const { language } = useContext(LanguageContext);
 
   useEffect(() => {
@@ -43,7 +46,9 @@ const Series = () => {
       try {
         const res = await api.get(`tv/${id}`);
         setSerie(res.data);
+        setTotalEpisodes(res.data.number_of_episodes);
         checkFavorite(res.data.id);
+        calculateProgress(res.data.id);
 
         const videoRes = await api.get(`tv/${id}/videos`);
         const trailer = videoRes.data.results.find(
@@ -60,6 +65,8 @@ const Series = () => {
         const providerRes = await api.get(`tv/${id}/watch/providers`);
         if (providerRes.data.results && providerRes.data.results.BR) {
             setProviders(providerRes.data.results.BR);
+        } else {
+            setProviders(null);
         }
 
       } catch (error) {
@@ -71,6 +78,20 @@ const Series = () => {
 
     getSeriesData();
   }, [id, language]);
+
+  useEffect(() => {
+      const handleFocus = () => {
+          if (serie) calculateProgress(serie.id);
+      };
+      window.addEventListener('focus', handleFocus);
+      return () => window.removeEventListener('focus', handleFocus);
+  }, [serie]);
+
+  const calculateProgress = (seriesId) => {
+      const savedProgress = JSON.parse(localStorage.getItem('cineverse_progress')) || {};
+      const watched = savedProgress[seriesId] || [];
+      setWatchedCount(watched.length);
+  };
 
   const checkFavorite = (serieId) => {
     const saved = JSON.parse(localStorage.getItem("cineverse_favorites")) || [];
@@ -111,6 +132,8 @@ const Series = () => {
     );
   }
 
+  const progressPercentage = totalEpisodes > 0 ? Math.round((watchedCount / totalEpisodes) * 100) : 0;
+
   return (
     <Container
         as={motion.div}
@@ -141,6 +164,16 @@ const Series = () => {
           <div className="info-grid">
             <p className="tagline">{serie.tagline}</p>
 
+            <ProgressSection>
+                <div className="progress-label">
+                    <span>{language === 'pt-BR' ? 'Seu Progresso' : 'Your Progress'}</span>
+                    <span>{watchedCount} / {totalEpisodes} ({progressPercentage}%)</span>
+                </div>
+                <div className="progress-bar-bg">
+                    <div className="progress-bar-fill" style={{ width: `${progressPercentage}%` }}></div>
+                </div>
+            </ProgressSection>
+
             <div className="stats-row">
               <div className="info">
                 <h3><BsCalendarCheck /> {language === 'pt-BR' ? "Estréia:" : "First Air:"}</h3>
@@ -161,18 +194,46 @@ const Series = () => {
               <p>{serie.overview}</p>
             </div>
 
-            {providers && providers.flatrate && (
+            {providers && (
                 <div className="providers-section">
-                    <h3><BsTv /> {language === 'pt-BR' ? "Onde Assistir:" : "Where to Watch:"}</h3>
-                    <div className="providers-list">
-                        {providers.flatrate.map((prov) => (
-                            <img 
-                                key={prov.provider_id} 
-                                src={logoUrl + prov.logo_path} 
-                                alt={prov.provider_name}
-                                title={prov.provider_name}
-                            />
-                        ))}
+                    <h3><BsTv /> {language === 'pt-BR' ? "Disponível em (BR):" : "Available on (BR):"}</h3>
+                    
+                    <div className="providers-container">
+                        {providers.flatrate && (
+                            <div className="provider-group">
+                                <span>Stream:</span>
+                                <div className="icons">
+                                    {providers.flatrate.map((prov) => (
+                                        <img 
+                                            key={prov.provider_id} 
+                                            src={logoUrl + prov.logo_path} 
+                                            alt={prov.provider_name}
+                                            title={prov.provider_name}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {providers.rent && (
+                            <div className="provider-group">
+                                <span>{language === 'pt-BR' ? "Alugar:" : "Rent:"}</span>
+                                <div className="icons">
+                                    {providers.rent.map((prov) => (
+                                        <img 
+                                            key={prov.provider_id} 
+                                            src={logoUrl + prov.logo_path} 
+                                            alt={prov.provider_name}
+                                            title={prov.provider_name}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {!providers.flatrate && !providers.rent && (
+                            <p style={{color: '#888'}}>{language === 'pt-BR' ? 'Não disponível para streaming no momento.' : 'Not available for streaming right now.'}</p>
+                        )}
                     </div>
                 </div>
             )}
@@ -181,20 +242,21 @@ const Series = () => {
                 <h3>{language === 'pt-BR' ? "Temporadas" : "Seasons"}</h3>
                 <div className="seasons-list">
                     {serie.seasons.filter(s => s.season_number > 0).map(season => (
-                        <div key={season.id} className="season-card">
-                            <img 
-                                src={season.poster_path ? profileUrl + season.poster_path : "https://via.placeholder.com/100x150?text=S"} 
-                                alt={season.name} 
-                            />
-                            <p>{season.name}</p>
-                            <span>{season.episode_count} eps</span>
-                        </div>
+                        <Link key={season.id} to={`/tv/${serie.id}/season/${season.season_number}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <div className="season-card">
+                                <img 
+                                    src={season.poster_path ? profileUrl + season.poster_path : "https://via.placeholder.com/100x150?text=S"} 
+                                    alt={season.name} 
+                                />
+                                <p>{season.name}</p>
+                                <span>{season.episode_count} eps</span>
+                            </div>
+                        </Link>
                     ))}
                 </div>
             </div>
 
-            {cast.length > 0 && (
-              <div className="cast-section">
+            <div className="cast-section">
                 <h3>{language === 'pt-BR' ? "Elenco Principal" : "Top Cast"}</h3>
                 <div className="cast-list">
                   {cast.map((actor) => (
@@ -210,8 +272,7 @@ const Series = () => {
                     </Link>
                   ))}
                 </div>
-              </div>
-            )}
+            </div>
 
             {trailerKey && (
               <div className="trailer-container">
@@ -289,6 +350,29 @@ const Container = styled.div`
     flex: 1;
   }
 
+  .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      color: var(--primary);
+  }
+
+  .progress-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: var(--surface);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+  }
+
+  .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      transition: width 0.5s ease-in-out;
+  }
+
   .stats-row {
     display: flex;
     flex-wrap: wrap;
@@ -309,7 +393,7 @@ const Container = styled.div`
     text-align: justify;
   }
 
-  .providers-section h3, .cast-section h3, .seasons-section h3 {
+  .providers-section h3 {
     color: var(--primary);
     margin-bottom: 1rem;
     display: flex;
@@ -317,8 +401,42 @@ const Container = styled.div`
     gap: 0.5rem;
   }
 
-  .providers-list { display: flex; gap: 1rem; }
-  .providers-list img { width: 50px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+  .providers-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: var(--surface);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .provider-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      span { font-weight: bold; color: var(--text-gray); min-width: 60px; }
+      .icons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          img {
+            width: 45px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            &:hover { transform: scale(1.1); }
+          }
+      }
+  }
+
+  .seasons-section h3, .cast-section h3 {
+    color: var(--primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
 
   .seasons-list, .cast-list {
     display: flex;
@@ -335,23 +453,20 @@ const Container = styled.div`
     max-width: 100px;
     text-align: center;
     font-size: 0.9rem;
+    cursor: pointer;
+    transition: transform 0.3s;
   }
+  
+  .season-card:hover, .actor-card:hover { transform: scale(1.05); }
 
   .season-card img, .actor-card img {
     width: 100%;
     border-radius: 8px;
     margin-bottom: 0.5rem;
   }
-
-  .actor-name {
-    font-weight: bold;
-    margin-bottom: 0.2rem;
-  }
   
-  .character-name {
-    color: var(--text-gray);
-    font-size: 0.8rem;
-  }
+  .actor-name { font-weight: bold; margin-bottom: 0.2rem; }
+  .character-name { color: var(--text-gray); font-size: 0.8rem; }
   
   .trailer-container { margin-top: 1rem; }
   
@@ -382,6 +497,11 @@ const Container = styled.div`
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 1.5rem;
   }
+`;
+
+const ProgressSection = styled.div`
+    width: 100%;
+    margin-bottom: 1.5rem;
 `;
 
 const Button = styled.button`

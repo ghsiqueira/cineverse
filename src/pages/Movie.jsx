@@ -113,6 +113,8 @@ const Movie = () => {
         const providerRes = await api.get(`movie/${id}/watch/providers`);
         if (providerRes.data.results && providerRes.data.results.BR) {
             setProviders(providerRes.data.results.BR);
+        } else {
+            setProviders(null);
         }
 
       } catch (error) {
@@ -326,18 +328,46 @@ const Movie = () => {
                 </CollectionBanner>
             )}
 
-            {providers && providers.flatrate && (
+            {providers && (
                 <div className="providers-section">
-                    <h3><BsTv /> {language === 'pt-BR' ? "Onde Assistir:" : "Where to Watch:"}</h3>
-                    <div className="providers-list">
-                        {providers.flatrate.map((prov) => (
-                            <img 
-                                key={prov.provider_id} 
-                                src={logoUrl + prov.logo_path} 
-                                alt={prov.provider_name}
-                                title={prov.provider_name}
-                            />
-                        ))}
+                    <h3><BsTv /> {language === 'pt-BR' ? "Disponível em (BR):" : "Available on (BR):"}</h3>
+                    
+                    <div className="providers-container">
+                        {providers.flatrate && (
+                            <div className="provider-group">
+                                <span>Stream:</span>
+                                <div className="icons">
+                                    {providers.flatrate.map((prov) => (
+                                        <img 
+                                            key={prov.provider_id} 
+                                            src={logoUrl + prov.logo_path} 
+                                            alt={prov.provider_name}
+                                            title={prov.provider_name}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {providers.rent && (
+                            <div className="provider-group">
+                                <span>{language === 'pt-BR' ? "Alugar:" : "Rent:"}</span>
+                                <div className="icons">
+                                    {providers.rent.map((prov) => (
+                                        <img 
+                                            key={prov.provider_id} 
+                                            src={logoUrl + prov.logo_path} 
+                                            alt={prov.provider_name}
+                                            title={prov.provider_name}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {!providers.flatrate && !providers.rent && (
+                            <p style={{color: '#888'}}>{language === 'pt-BR' ? 'Não disponível para streaming no momento.' : 'Not available for streaming right now.'}</p>
+                        )}
                     </div>
                 </div>
             )}
@@ -479,15 +509,36 @@ const Container = styled.div`
     gap: 0.5rem;
   }
 
-  .providers-list {
-    display: flex;
-    gap: 1rem;
+  .providers-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: var(--surface);
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
   }
 
-  .providers-list img {
-    width: 50px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  .provider-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      
+      span { font-weight: bold; color: var(--text-gray); min-width: 60px; }
+      
+      .icons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          
+          img {
+            width: 45px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            &:hover { transform: scale(1.1); }
+          }
+      }
   }
 
   .cast-section h3 {
