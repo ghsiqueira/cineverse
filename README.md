@@ -1,6 +1,6 @@
 # 🎬 CineVerse - AI Powered Movie Explorer
 
-![Status](https://img.shields.io/badge/STATUS-LIVE-brightgreen?style=for-the-badge)
+![Status](https://img.shields.io/badge/status-live-brightgreen?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![React](https://img.shields.io/badge/react-18.2.0-61DAFB?logo=react)
 ![Vite](https://img.shields.io/badge/vite-4.4.5-646CFF?logo=vite)
