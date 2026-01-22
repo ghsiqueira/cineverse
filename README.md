@@ -1,17 +1,17 @@
+<div align="center">
+
 # 🎬 CineVerse - AI Powered Movie Explorer
 
 ![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
-![React](https://img.shields.io/badge/react-18.2.0-61DAFB?style=for-the-badge&logo=react)
-![Vite](https://img.shields.io/badge/vite-4.4.5-646CFF?style=for-the-badge&logo=vite)
+![React](https://img.shields.io/badge/react-18.2.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/vite-4.4.5-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Status](https://img.shields.io/badge/STATUS-LIVE-brightgreen?style=for-the-badge)
 
 > **CineVerse** é uma plataforma moderna e imersiva para descoberta de filmes e séries, potencializada por Inteligência Artificial. Mais do que um catálogo, é uma ferramenta completa para cinéfilos acompanharem lançamentos, gerenciarem suas listas e testarem seus conhecimentos.
 
----
-
-## 🖼️ Preview
-
 [🔗 **Clique aqui para acessar a demonstração online**](https://cineverse-weld.vercel.app/)
+
+</div>
 
 ---
 
